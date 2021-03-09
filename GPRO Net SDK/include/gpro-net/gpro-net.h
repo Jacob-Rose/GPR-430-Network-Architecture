@@ -26,9 +26,5 @@
 #define _GPRO_NET_H_
 
 
-#include "gpro-net/gpro-net-util/gpro-net-lib.h"
-#include "gpro-net/gpro-net-util/gpro-net-console.h"
-#include "gpro-net/gpro-net-util/gpro-net-gamestate.h"
-
 
 #endif	// !_GPRO_NET_H_
