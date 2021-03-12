@@ -1,0 +1,4 @@
+#ifndef _NETWORK_MESSAGES_H
+#define _NETWORK_MESSAGES_H
+
+#endif //_NETWORK_MESSAGES_H

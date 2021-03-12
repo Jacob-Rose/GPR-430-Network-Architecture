@@ -5,7 +5,6 @@
 #include <RakNet/MessageIdentifiers.h>
 #include <RakNet/RakNetTypes.h>
 
-
 #include <RakNet/RakString.h>
 #include <RakNet/BitStream.h>
 #include <RakNet/GetTime.h>
@@ -14,9 +13,8 @@
 #include <vector>
 #include <string>
 
-#include "gpro-net-gamestate.h"
 
-enum GameMessageID
+enum NetworkMessageID
 {
 	ID_PACKAGED_PACKET = ID_USER_PACKET_ENUM + 1,
 	ID_DISPLAY_NAME_UPDATED,
@@ -32,20 +30,16 @@ enum GameMessageID
 class TimestampMessage;
 class PlayerMoveMessage;
 class DisplayNameChangeMessage;
+class NetworkMessage;
 
-
-struct BlackjackState
+class NetworkState
 {
-	struct PlayerState
-	{
-		RakNet::SystemAddress m_Address;
-		std::vector<int> m_Cards;
-	};
-	std::vector<PlayerState> m_ActivePlayers;
-	std::vector<int> m_DealerCards;
-	std::vector<RakNet::SystemAddress> m_SpectatingPlayers; //no cards
+public:
+	RakNet::RakPeerInterface* m_Peer;
 
-	short m_CurrentPlayerTurn = 0;
+	std::vector<NetworkMessage*> m_ServerMessageQueue;
+protected:
+
 };
 
 

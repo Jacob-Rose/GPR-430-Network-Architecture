@@ -141,10 +141,12 @@ bool PlayerActiveOrderMessage::WritePacketBitstream(RakNet::BitStream* bs)
 {
 	bs->Write(m_MessageID);
 	bs->Write(m_ActivePlayers.size());
+	/*
 	for (int i = 0; i < m_ActivePlayers.size(); i++)
 	{
 		bs->Write(m_ActivePlayers[i]);
 	}
+	*/
 	return true;
 }
 
