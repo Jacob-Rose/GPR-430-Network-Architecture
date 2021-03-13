@@ -42,17 +42,9 @@
 #include <RakNet/RakNetTypes.h>  // MessageID
 
 #include "gpro-net/shared-net.h"
-#include "Deck.h"
 
-#define NUM_GAMES 3
+#include <SFML/Window.hpp>
 
-struct ServerBlackjackState : public BlackjackState
-{
-	//Blackjack data only the server should access
-	Deck deck;
-	int currentPlayerTurn = 0; 
-	float m_TimeSinceRoundStart = 0.0f; //used for timing the playerspectatormessage from all players
-};
 
 struct ServerState 
 {
@@ -60,7 +52,7 @@ struct ServerState
 	RakNet::RakPeerInterface* m_Peer;
 	std::vector<NetworkMessage*> m_InputEventCache; //filed in input
 	std::vector<NetworkMessage*> m_OutputEventCache; //filled in update
-	ServerBlackjackState m_ActiveGames[NUM_GAMES];
+	//ServerBlackjackState m_ActiveGames[NUM_GAMES];
 
 	std::vector<RakNet::SystemAddress> m_LobbyPlayers; //players who havent joined a game yet
 
@@ -83,101 +75,42 @@ void handleInput(ServerState* ss)
 	}
 }
 
-void findGamePlayerIsIn(RakNet::SystemAddress address, ServerState* ss, int& gameIndex, int& playerIndex, bool& playerSpectating)
-{
-	for (int i = 0; i < NUM_GAMES; i++)
-	{
-		for (int j = 0; j < ss->m_ActiveGames[i].m_ActivePlayers.size(); j++)
-		{
-			if (ss->m_ActiveGames[i].m_ActivePlayers[j].m_Address == address)
-			{
-				playerIndex = j;
-				gameIndex = i;
-				playerSpectating = false;
-				return;
-			}
-		}
-		for (int j = 0; j < ss->m_ActiveGames[i].m_ActivePlayers.size(); j++)
-		{
-			if (ss->m_ActiveGames[i].m_SpectatingPlayers[j] == address)
-			{
-				playerIndex = j;
-				gameIndex = i;
-				playerSpectating = true;
-				return;
-			}
-		}
-	}
-	playerIndex = -1;
-	gameIndex = -1;
-	playerSpectating = true;
-	return;
-}
 
 void handleUpdate(ServerState* ss)
 {
-	for (int i = 0; i < NUM_GAMES; i++)
-	{
-		//we need deltatime
-	}
 	for (int i = 0; i < ss->m_InputEventCache.size(); i++)
 	{
 		if (DisplayNameChangeMessage* msg = dynamic_cast<DisplayNameChangeMessage*>(ss->m_InputEventCache[i]))
 		{
-			ss->m_DisplayNames[msg->m_Sender] = msg->m_UpdatedDisplayName;
-			ss->m_OutputEventCache.push_back(msg);
+			//ss->m_DisplayNames[msg->m_Sender] = msg->m_UpdatedDisplayName;
+			//ss->m_OutputEventCache.push_back(msg);
 		}
 		else if (PlayerChatMessage* msg = dynamic_cast<PlayerChatMessage*>(ss->m_InputEventCache[i]))
 		{
-			int playerIndex, playerGameIndex;
-			bool playerSpectating;
-			findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
-			ss->m_OutputEventCache.push_back(msg);
+			//int playerIndex, playerGameIndex;
+			//bool playerSpectating;
+			//findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
+			//ss->m_OutputEventCache.push_back(msg);
 		}
 		else if (PlayerMoveMessage* msg = dynamic_cast<PlayerMoveMessage*>(ss->m_InputEventCache[i]))
 		{
-			//draw card
-			int playerIndex, playerGameIndex;
-			bool playerSpectating;
-			findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
-			if (playerGameIndex != -1)
-			{
-				PlayerCardDrawnMessage* newMsg = new PlayerCardDrawnMessage();
-				int card = ss->m_ActiveGames[playerGameIndex].deck.getNextCard();
-				newMsg->m_CardDrawn = card;
-				newMsg->m_Player = msg->m_Sender;
-				newMsg->m_Sender = RakNet::UNASSIGNED_SYSTEM_ADDRESS;
-				ss->m_OutputEventCache.push_back(newMsg);
-			}
+			
 
 
 		}
 		else if (PlayerSpectatorChoiceMessage* msg = dynamic_cast<PlayerSpectatorChoiceMessage*>(ss->m_InputEventCache[i]))
 		{
 			//add to active or spectating player pool
-			int playerIndex, playerGameIndex;
-			bool playerSpectating;
-			findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
+			//int playerIndex, playerGameIndex;
+			//bool playerSpectating;
+			//findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
 			
 		}
 		else if (PlayerJoinGameRequestMessage* msg = dynamic_cast<PlayerJoinGameRequestMessage*>(ss->m_InputEventCache[i]))
 		{
 			//todo add them to the game, remove from lobby
-			int playerIndex, playerGameIndex;
-			bool playerSpectating;
-			findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
-			if (playerGameIndex >= 0 && msg->m_GameIndex != -1)
-			{
-				for (int i = 0; i < ss->m_ActiveGames[playerGameIndex].m_ActivePlayers.size(); i++)
-				{
-
-				}
-			}
-			else if (playerGameIndex == -1 && msg->m_GameIndex >= 0)
-			{
-				ss->m_LobbyPlayers.erase(std::find(ss->m_LobbyPlayers.begin(), ss->m_LobbyPlayers.end(), msg->m_Sender));
-				ss->m_ActiveGames[msg->m_GameIndex].m_SpectatingPlayers.push_back(msg->m_Sender);
-			}
+			//int playerIndex, playerGameIndex;
+			//bool playerSpectating;
 			
 
 		}
@@ -217,21 +150,22 @@ void handleOutput(ServerState* ss)
 		if (DisplayNameChangeMessage* msg = dynamic_cast<DisplayNameChangeMessage*>(ss->m_OutputEventCache[i]))
 		{
 			//GLOBALLY SET
-			RakNet::BitStream bs;
-			msg->WritePacketBitstream(&bs);
-			ss->m_Peer->Send(&bs, PacketPriority::HIGH_PRIORITY, PacketReliability::RELIABLE_ORDERED, 0, msg->m_Sender, true); //broadcast it to everyone
+			//RakNet::BitStream bs;
+			//msg->WritePacketBitstream(&bs);
+			//ss->m_Peer->Send(&bs, PacketPriority::HIGH_PRIORITY, PacketReliability::RELIABLE_ORDERED, 0, msg->m_Sender, true); //broadcast it to everyone
 		}
 		else if (PlayerChatMessage* msg = dynamic_cast<PlayerChatMessage*>(ss->m_OutputEventCache[i]))
 		{
 			//PER GAME OR IN LOBBY
-			int playerIndex, playerGameIndex;
-			bool playerSpectating;
-			findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
+			//int playerIndex, playerGameIndex;
+			//bool playerSpectating;
+			//findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
 			//SENT PER ROOM
-			RakNet::BitStream bs;
-			msg->WritePacketBitstream(&bs);
+			//RakNet::BitStream bs;
+			//msg->WritePacketBitstream(&bs);
 
 			//send to everyone in that game specifically
+			/*
 			if (playerGameIndex != -1)
 			{
 				for (int j = 0; j < ss->m_ActiveGames[playerGameIndex].m_ActivePlayers.size(); j++)
@@ -246,37 +180,14 @@ void handleOutput(ServerState* ss)
 					ss->m_Peer->Send(&bs, PacketPriority::HIGH_PRIORITY, PacketReliability::RELIABLE_ORDERED, 0, ss->m_LobbyPlayers[j], false);
 				}
 			}
-
+			*/
 
 			
-		}
-		else if (PlayerMoveMessage* msg = dynamic_cast<PlayerMoveMessage*>(ss->m_OutputEventCache[i]))
-		{
-			//PER GAME OR IN LOBBY
-			int playerIndex, playerGameIndex;
-			bool playerSpectating;
-			findGamePlayerIsIn(msg->m_Sender, ss, playerGameIndex, playerIndex, playerSpectating);
-
-			RakNet::BitStream bs;
-			msg->WritePacketBitstream(&bs);
-
-			//send to everyone in that game specifically
-			if (playerGameIndex != -1)
-			{
-				for (int j = 0; j < ss->m_ActiveGames[playerGameIndex].m_ActivePlayers.size(); j++)
-				{
-					ss->m_Peer->Send(&bs, PacketPriority::HIGH_PRIORITY, PacketReliability::RELIABLE_ORDERED, 0, ss->m_ActiveGames[playerGameIndex].m_ActivePlayers[j].m_Address, false);
-				}
-			}
-			else
-			{
-				//what u doing bro, how did you send this in the lobby
-			}
 		}
 	}
 }
 
-int main(void)
+int main(int argc, char* argv[])
 {
 	const unsigned short SERVER_PORT = 7777;
 	const unsigned short MAX_CLIENTS = 10;
@@ -289,25 +200,8 @@ int main(void)
 	ss->m_Peer->SetMaximumIncomingConnections(MAX_CLIENTS);
 	printf("Starting the server.\n");
 
-	//test load IMPORTANT NOTE This creates a txt file on the VDI which gets wiped on startup
-	/*
-	std::ifstream msgLoader(ss->saveFilePath);
-	if (msgLoader) 
-	{
-		int counter = 0;
-		std::string loadString;
-		while (std::getline(msgLoader, loadString))
-		{
-			printf(loadString.c_str()); //Change this if we want to store the message and do more with it
-			printf("\n");
-		}		
-	}
-	msgLoader.close();
-	*/
-	// We need to let the server accept incoming connections from the clients
-	ss->msgSaver = std::ofstream(ss->saveFilePath); // this is probably not the best way to handle this but it function
-
-	while (1)
+	sf::Window window(sf::VideoMode(800, 600), "r/Place"); //were gonna draw the whole game out
+	while (window.isOpen())
 	{
 		
 		handleInput(ss);
@@ -315,6 +209,15 @@ int main(void)
 		handleUpdate(ss);
 
 		handleOutput(ss);
+
+		sf::Event event;
+		while (window.pollEvent(event))
+		{
+			if (event.type == sf::Event::Closed)
+			{
+				window.close();
+			}
+		}
 	}
 
 	ss->msgSaver.close();
