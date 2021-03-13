@@ -91,3 +91,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+
+#SFML Include lib and bin as we are not compiling them
+!SFML-2.5.1_x64/
+!SFML-2.5.1_x86/
