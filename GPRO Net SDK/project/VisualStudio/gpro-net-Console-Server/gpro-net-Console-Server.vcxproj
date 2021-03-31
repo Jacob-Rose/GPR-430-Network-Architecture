@@ -20,9 +20,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\source\gpro-net-Console-Server\main-server.cpp" />
+    <ClCompile Include="..\..\..\source\gpro-net-Console-Server\server-game-state.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\source\gpro-net-Console-Server\Deck.h" />
+    <ClInclude Include="..\..\..\source\gpro-net-Console-Server\server-game-state.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

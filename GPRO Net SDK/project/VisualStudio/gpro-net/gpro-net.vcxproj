@@ -136,10 +136,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN$(PlatformArchitecture);_WINDOWS;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);_DEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN$(PlatformArchitecture);_WINDOWS;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);_DEBUG;SFML_STATIC</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(gpro_net_sdk)include\;$(dev_sdk_dir)include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(gpro_net_sdk)include\;$(dev_sdk_dir)include\;$(gpro_net_sdk)\..\SFML-2.5.1_x64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -160,7 +160,7 @@
       <PreprocessorDefinitions>WIN$(PlatformArchitecture);_WINDOWS;WIN32_LEAN_AND_MEAN;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);NDEBUG</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <AdditionalIncludeDirectories>$(gpro_net_sdk)include\;$(dev_sdk_dir)include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(gpro_net_sdk)include\;$(dev_sdk_dir)include\;$(gpro_net_sdk)\..\SFML-2.5.1_x64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -175,14 +175,23 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\include\gpro-net\enemy.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\entity.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\game-state.h" />
     <ClInclude Include="..\..\..\include\gpro-net\gpro-net-console.h" />
-    <ClInclude Include="..\..\..\include\gpro-net\gpro-net-gamestate.h" />
     <ClInclude Include="..\..\..\include\gpro-net\gpro-net.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\network-messages.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\player.h" />
     <ClInclude Include="..\..\..\include\gpro-net\shared-net.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\include\gpro-net\gpro-net-console_win.c" />
+    <ClCompile Include="..\..\..\source\gpro-net\enemy.cpp" />
+    <ClCompile Include="..\..\..\source\gpro-net\entity.cpp" />
+    <ClCompile Include="..\..\..\source\gpro-net\game-state.cpp" />
     <ClCompile Include="..\..\..\source\gpro-net\gpro-net.c" />
+    <ClCompile Include="..\..\..\source\gpro-net\network-messages.cpp" />
+    <ClCompile Include="..\..\..\source\gpro-net\player.cpp" />
     <ClCompile Include="..\..\..\source\gpro-net\shared-net.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

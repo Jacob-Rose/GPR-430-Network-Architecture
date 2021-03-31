@@ -24,70 +24,25 @@
 
 #include "gpro-net/gpro-net.h"
 
-//STD
-#include <stdio.h>
-#include <string.h>
-#include <vector>
-#include <future>
-#include <limits>
-#include <iostream>
-#include <list>
-#include <map>
-#include <numeric>
+#include "client-game-state.h"
 
-//RakNet
-#include <RakNet/RakPeerInterface.h>
-#include <RakNet/MessageIdentifiers.h>
-#include <RakNet/RakNetTypes.h>
-#include <RakNet/BitStream.h>
-#include <RakNet/RakNetTypes.h>  // MessageID
-#include <RakNet/GetTime.h>
-#include <RakNet/StringCompressor.h>
-
-#include "gpro-net/shared-net.h"
-
-#include "SFML/Window.hpp"
-
+#define GAME_CLIENT 1
 
 int main(void)
 {
 	//for us
 
 
-	NetworkState ns[1] = { 0 };
+	//NetworkState ns[1] = { 0 };
 
 	const unsigned short SERVER_PORT = 7777;
 	const char* SERVER_IP = "172.16.2.57"; //update every time
 
-	ns->m_Peer = RakNet::RakPeerInterface::GetInstance(); //set up peer
+	jr::ClientGameState* gs = new jr::ClientGameState(SERVER_IP, SERVER_PORT);
+	
+	gs->runGameLoop();
 
-	sf::Window window(sf::VideoMode(800, 600), "r/Place");
-
-	while (window.isOpen())
-	{
-
-		//Receive Network Messages
-		for (RakNet::Packet* packet = ns->m_Peer->Receive(); packet; ns->m_Peer->DeallocatePacket(packet), packet = ns->m_Peer->Receive())
-		{
-			RakNet::BitStream bsIn(packet->data, packet->length, false);
-
-			NetworkMessage::DecypherPacket(&bsIn, packet->systemAddress, ns->m_ServerMessageQueue);
-			//yup, thats it in the input step
-		}
-
-		sf::Event event;
-		while (window.pollEvent(event))
-		{
-			if (event.type == sf::Event::Closed)
-			{
-				window.close();
-			}
-		}
-
-	}
-
-
-	RakNet::RakPeerInterface::DestroyInstance(ns->m_Peer);
+	delete gs;
 
 
 	return 0;
