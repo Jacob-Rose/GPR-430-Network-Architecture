@@ -1,5 +1,6 @@
 #include "server-game-state.h"
 #include "gpro-net/player.h"
+#include <iostream>
 
 ServerGameState::ServerGameState() : GameState()
 {
@@ -10,11 +11,12 @@ ServerGameState::ServerGameState() : GameState()
 
 void ServerGameState::update()
 {
-	for (int i = 0; i < m_RemoteInputEventCache.size(); i++)
+	for (int i = 0; i < m_RemoteInputEventCache.size(); ++i)
 	{
 		if (NotificationMessage* msg = dynamic_cast<NotificationMessage*>(m_RemoteInputEventCache[i]))
 		{
-			switch (msg->m_MessageID)
+			RakNet::MessageID id = msg->getMessageID();
+			switch (id)
 			{
 			case ID_NEW_INCOMING_CONNECTION:
 			case ID_REMOTE_NEW_INCOMING_CONNECTION:
@@ -24,9 +26,10 @@ void ServerGameState::update()
 
 				//Once they join a lobby send PlayerActiveOrderMessage to check if player or spectator
 				//spawn player
-				jr::Entity* player = new jr::Player();
+				jr::Player* player = new jr::Player();
 				player->m_OwnerAddress = msg->m_Sender;
-				m_NetworkObjects.push_back(player);
+				m_NetworkEntities.push_back(player); //we store in both because update uses m_NetworkObject, but finding players is easier in a map :)
+				m_Players[msg->m_Sender] = player;
 
 				//now send spawn message
 				NetworkObjectCreateMessage* createMsg = new NetworkObjectCreateMessage();
@@ -44,6 +47,13 @@ void ServerGameState::update()
 
 				//and finally send update information
 				NetworkObjectUpdateMessage* updateMsg = new NetworkObjectUpdateMessage();
+				updateMsg->newPos[0] = 0; //xpos
+				updateMsg->newPos[1] = 0; //ypos
+				updateMsg->newRot = 0.0f; //rot
+				m_RemoteOutputEventCache.push_back(updateMsg);
+
+				std::cout << "Player Connected \n";
+
 				break;
 			}
 			case ID_CONNECTION_LOST:
@@ -51,10 +61,23 @@ void ServerGameState::update()
 			case ID_REMOTE_DISCONNECTION_NOTIFICATION:
 			case ID_REMOTE_CONNECTION_LOST:
 			{
-				//todo player disconnected
+				std::map<RakNet::RakNetGUID, jr::Player*>::iterator pr_it = m_Players.find(msg->m_Sender);
+				std::vector<jr::Entity*>::iterator no_it = std::find(m_NetworkEntities.begin(), m_NetworkEntities.end(), pr_it->second);
+
+				NetworkObjectDestroyMessage* destroyMsg = new NetworkObjectDestroyMessage();
+				destroyMsg->objectId = pr_it->second->m_NetID;
+				m_RemoteOutputEventCache.push_back(destroyMsg);
+
+				m_Players.erase(pr_it);
+				m_NetworkEntities.erase(no_it);
+
 				break;
 			}
 			}
+		}
+		else if (NetworkObjectUpdateMessage* msg = dynamic_cast<NetworkObjectUpdateMessage*>(m_RemoteInputEventCache[i]))
+		{
+			//todo update and pass on
 		}
 		delete m_RemoteInputEventCache[i];
 	}
@@ -66,6 +89,15 @@ void ServerGameState::update()
 
 void ServerGameState::handleRemoteOutput()
 {
+	RakNet::BitStream bs;
+	NetworkMessage::CreatePacketHeader(&bs, (int)m_RemoteOutputEventCache.size());
+	for (int i = 0; i < m_RemoteOutputEventCache.size(); ++i)
+	{
+		m_RemoteOutputEventCache[i]->WritePacketBitstream(&bs);
+
+		delete m_RemoteOutputEventCache[i];
+	}
+	m_Peer->Send(&bs, PacketPriority::HIGH_PRIORITY, PacketReliability::RELIABLE_ORDERED, 0, RakNet::UNASSIGNED_SYSTEM_ADDRESS, true); //this needs to have more control per message. but ill do this later
 }
 
 void ServerGameState::init()

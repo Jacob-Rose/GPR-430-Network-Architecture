@@ -15,7 +15,7 @@ protected:
 	const unsigned short MAX_CLIENTS = 10;
 	const unsigned short SERVER_PORT = 7777;
 
-
+	std::map<RakNet::RakNetGUID, jr::Player*> m_Players;
 	std::vector<int> m_FreeNetworkIndexes = std::vector<int>();
 
 public:

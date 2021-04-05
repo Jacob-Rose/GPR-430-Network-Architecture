@@ -31,20 +31,6 @@ public:
 	/// 
 	/// Returns -1 if error, 1 if success
 	///
-	template <class ObjectType>
-	int createNetworkObject(int index);
 };
 
 #endif
-
-template<class ObjectType>
-inline int jr::ClientGameState::createNetworkObject(int index)
-{
-	if (m_NetworkObjects.size() < index)
-	{
-		m_NetworkObjects.resize(((index % GameStateSettings::NETWORK_OBJECT_ARRAY_INCREMENT_AMOUNT) + 1) * GameStateSettings::NETWORK_OBJECT_ARRAY_INCREMENT_AMOUNT));
-	}
-
-
-	return 0;
-}

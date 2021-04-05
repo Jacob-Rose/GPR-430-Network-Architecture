@@ -1,9 +1,6 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-//SFML
-#include <SFML/Graphics/Image.hpp>
-
 //In-House
 #include "entity.h"
 
@@ -19,7 +16,7 @@ public:
 	Player();
 	~Player();
 
-	sf::Image m_Sprite;
+	
 
 	virtual void Update() override;
 

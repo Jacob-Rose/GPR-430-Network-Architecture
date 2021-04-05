@@ -52,7 +52,9 @@ protected:
 
 	virtual void handleRemoteOutput() = 0; //send out all packets needed in the m_OutputEventCache
 
-	std::vector<jr::Entity*> m_NetworkObjects = std::vector<jr::Entity*>(GameStateSettings::NETWORK_OBJECT_START_SIZE);
+	std::vector<jr::Entity*> m_NetworkEntities = std::vector<jr::Entity*>();
+
+	jr::Entity* getEntityById(int netID);
 
 public:
 

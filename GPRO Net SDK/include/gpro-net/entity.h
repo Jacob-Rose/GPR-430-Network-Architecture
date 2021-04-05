@@ -2,6 +2,8 @@
 #define ENTITY_H
 
 #include <SFML/System/Vector2.hpp>
+#include <SFML/Graphics/Sprite.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 #include <RakNet/RakNetTypes.h>
 
@@ -24,7 +26,8 @@ public:
 
 	friend class GameState;
 protected:
-
+	sf::Sprite m_Sprite;
+	sf::Texture m_Texture; //could be static so all players use same tex resource, but im lazy and worried about time
 
 	//Should be called by the client or server
 	Entity();

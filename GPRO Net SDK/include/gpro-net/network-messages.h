@@ -17,12 +17,12 @@
 #include <RakNet/GetTime.h>
 
 
-enum SharedNetworkMessageID
+enum class SharedNetworkMessageID
 {
 	ID_PACKAGED_PACKET = ID_USER_PACKET_ENUM + 1,
 	ID_NETWORK_OBJECT_CREATED_MESSAGE,
 	ID_NETWORK_OBJECT_DESTROY_MESSAGE,
-	ID_NETWORK_ENTITY_UPDATE_MESSAGE,
+	ID_NETWORK_OBJECT_UPDATE_MESSAGE,
 	ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE,
 };
 
@@ -43,14 +43,19 @@ class NetworkMessage;
 class NetworkMessage
 {
 protected:
-	NetworkMessage(RakNet::MessageID id) : m_MessageID(id) {}
-public:
+
 	const RakNet::MessageID m_MessageID;
+
+
+	NetworkMessage(RakNet::MessageID id) : m_MessageID(id) {} //abstract
+
+	
+public:
+	
 	RakNet::RakNetGUID m_Sender;
 
+	RakNet::MessageID getMessageID() { return m_MessageID; }
 
-
-public:
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) { bs->Write(m_MessageID); return true; }
 	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) = 0; //all messages should assume the messageid has already been read in and the read index is moved past it
 
@@ -68,7 +73,7 @@ public:
 class NotificationMessage : public NetworkMessage
 {
 public:
-	NotificationMessage(RakNet::MessageID id) : NetworkMessage(id) { }
+	NotificationMessage(RakNet::MessageID id) : NetworkMessage((RakNet::MessageID)id) { }
 
 	//these do nothing as the notification message stores the messageID and nothing more
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override { NetworkMessage::WritePacketBitstream(bs); return true; }
@@ -79,10 +84,10 @@ public:
 
 class NetworkObjectMessage : public NetworkMessage
 {
+protected:
+	NetworkObjectMessage(SharedNetworkMessageID id) : NetworkMessage((RakNet::MessageID)id), objectId(0) { } //abstract
 public:
 	short objectId; //directly correlates to object id
-
-	NetworkObjectMessage(SharedNetworkMessageID id) : NetworkMessage(id), objectId(0) { }
 
 	//these do nothing as the notification message stores the messageID and nothing more
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override;
@@ -94,7 +99,7 @@ class NetworkObjectAuthorityChangeMessage : public NetworkObjectMessage
 public:
 	RakNet::RakNetGUID newAddress;
 
-	NetworkObjectAuthorityChangeMessage() : NetworkObjectMessage(ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE) {};
+	NetworkObjectAuthorityChangeMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE) {};
 };
 
 class NetworkObjectCreateMessage : public NetworkObjectMessage
@@ -102,21 +107,21 @@ class NetworkObjectCreateMessage : public NetworkObjectMessage
 public:
 	NetworkObjectID objectType;
 
-	NetworkObjectCreateMessage() : NetworkObjectMessage(ID_NETWORK_OBJECT_CREATED_MESSAGE), objectType(NetworkObjectID::NULL_OBJECT_ID) {};
+	NetworkObjectCreateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_CREATED_MESSAGE), objectType(NetworkObjectID::NULL_OBJECT_ID) {};
 };
 
 class NetworkObjectDestroyMessage : public NetworkObjectMessage
 {
 public:
-	NetworkObjectDestroyMessage() : NetworkObjectMessage(ID_NETWORK_OBJECT_DESTROY_MESSAGE) {};
+	NetworkObjectDestroyMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_DESTROY_MESSAGE) {};
 };
 
 class NetworkObjectUpdateMessage : public NetworkObjectMessage
 {
+public:
 	float newPos[2];
 	float newRot;
-public:
-	NetworkObjectUpdateMessage() : NetworkObjectMessage(ID_NETWORK_ENTITY_UPDATE_MESSAGE), newPos(), newRot(0) {};
+	NetworkObjectUpdateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_UPDATE_MESSAGE), newPos(), newRot(0) {};
 };
 
 

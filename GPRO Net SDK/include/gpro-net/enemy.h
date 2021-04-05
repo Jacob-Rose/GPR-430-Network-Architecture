@@ -12,11 +12,14 @@ namespace jr
 	class Enemy;
 }
 
-class jr::Enemy : jr::Entity
+class jr::Enemy : public jr::Entity
 {
 public:
 	Enemy();
 	~Enemy();
+
+
+	virtual void Update() override;
 protected:
 
 };

@@ -38,6 +38,7 @@ void GameState::update()
 	m_GameWindow.clear(sf::Color::Black); //clear window with black first
 
 
+
 	m_BackgroundTexture.update(m_BackgroundImage);
 
 	sf::Sprite backgroundSprite;
@@ -45,7 +46,26 @@ void GameState::update()
 
 	m_GameWindow.draw(backgroundSprite);
 
-	//m_GameWindow.display(); //end current frame (call on the extended classes)
+	
+	//Draw Entities
+	for (int i = 0; i < m_NetworkEntities.size(); i++)
+	{
+		m_GameWindow.draw(m_NetworkEntities[i]->m_Sprite);
+	}
+
+	m_GameWindow.display();
+}
+
+jr::Entity* jr::GameState::getEntityById(int netID)
+{
+	for (int i = 0; i < m_NetworkEntities.size(); i++)
+	{
+		if (m_NetworkEntities[i]->m_NetID == netID)
+		{
+			return m_NetworkEntities[i];
+		}
+	}
+	return nullptr;
 }
 
 GameState::GameState() : GameState(sf::VideoMode(800, 600))

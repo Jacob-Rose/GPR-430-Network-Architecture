@@ -8,3 +8,7 @@ jr::Enemy::Enemy()
 jr::Enemy::~Enemy()
 {
 }
+
+void jr::Enemy::Update()
+{
+}
