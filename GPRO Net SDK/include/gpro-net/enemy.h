@@ -19,7 +19,7 @@ public:
 	~Enemy();
 
 
-	virtual void Update() override;
+	virtual void Update(EntityUpdateInfo updateInfo) override;
 protected:
 
 };

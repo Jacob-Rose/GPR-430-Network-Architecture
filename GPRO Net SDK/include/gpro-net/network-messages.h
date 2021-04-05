@@ -15,6 +15,7 @@
 #include <RakNet/BitStream.h>
 #include <RakNet/RakNetTime.h>
 #include <RakNet/GetTime.h>
+#include <RakNet/PacketPriority.h>
 
 
 enum class SharedNetworkMessageID
@@ -47,12 +48,14 @@ protected:
 	const RakNet::MessageID m_MessageID;
 
 
-	NetworkMessage(RakNet::MessageID id) : m_MessageID(id) {} //abstract
+	NetworkMessage(RakNet::MessageID id, PacketReliability reliability, PacketPriority priority) : m_MessageID(id), m_Priority(priority), m_Reliablity(reliability) {} //abstract
 
 	
 public:
 	
 	RakNet::RakNetGUID m_Sender;
+	PacketReliability m_Reliablity;
+	PacketPriority m_Priority;
 
 	RakNet::MessageID getMessageID() { return m_MessageID; }
 
@@ -73,11 +76,20 @@ public:
 class NotificationMessage : public NetworkMessage
 {
 public:
-	NotificationMessage(RakNet::MessageID id) : NetworkMessage((RakNet::MessageID)id) { }
+	NotificationMessage(RakNet::MessageID id) : 
+		NetworkMessage((RakNet::MessageID)id, 
+			PacketReliability::RELIABLE_ORDERED, 
+			PacketPriority::HIGH_PRIORITY) { }
 
 	//these do nothing as the notification message stores the messageID and nothing more
-	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override { NetworkMessage::WritePacketBitstream(bs); return true; }
-	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override { return true; }
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override 
+	{ 
+		NetworkMessage::WritePacketBitstream(bs); 
+		return true; 
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override { 
+		return true; 
+	}
 };
 
 
@@ -85,13 +97,23 @@ public:
 class NetworkObjectMessage : public NetworkMessage
 {
 protected:
-	NetworkObjectMessage(SharedNetworkMessageID id) : NetworkMessage((RakNet::MessageID)id), objectId(0) { } //abstract
+	NetworkObjectMessage(SharedNetworkMessageID id, PacketReliability reliability) : 
+		NetworkMessage((RakNet::MessageID)id, reliability, PacketPriority::HIGH_PRIORITY), objectId(0) { } //abstract
 public:
 	short objectId; //directly correlates to object id
 
 	//these do nothing as the notification message stores the messageID and nothing more
-	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override;
-	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override;
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkMessage::WritePacketBitstream(bs);
+		bs->Write(objectId);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		bs->Read(objectId);
+		return true;
+	}
 };
 
 class NetworkObjectAuthorityChangeMessage : public NetworkObjectMessage
@@ -99,7 +121,22 @@ class NetworkObjectAuthorityChangeMessage : public NetworkObjectMessage
 public:
 	RakNet::RakNetGUID newAddress;
 
-	NetworkObjectAuthorityChangeMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE) {};
+	NetworkObjectAuthorityChangeMessage() : 
+		NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE,
+			PacketReliability::RELIABLE_ORDERED) {};
+
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::WritePacketBitstream(bs);
+		bs->Write(newAddress);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::ReadPacketBitstream(bs);
+		bs->Read(newAddress);
+		return true;
+	}
 };
 
 class NetworkObjectCreateMessage : public NetworkObjectMessage
@@ -107,13 +144,34 @@ class NetworkObjectCreateMessage : public NetworkObjectMessage
 public:
 	NetworkObjectID objectType;
 
-	NetworkObjectCreateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_CREATED_MESSAGE), objectType(NetworkObjectID::NULL_OBJECT_ID) {};
+	NetworkObjectCreateMessage() : NetworkObjectMessage(
+		SharedNetworkMessageID::ID_NETWORK_OBJECT_CREATED_MESSAGE,
+		PacketReliability::RELIABLE_ORDERED), 
+		objectType(NetworkObjectID::NULL_OBJECT_ID) {};
+
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::WritePacketBitstream(bs);
+		bs->Write(objectType);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::ReadPacketBitstream(bs);
+		bs->Read(objectType);
+		return true;
+	}
 };
 
 class NetworkObjectDestroyMessage : public NetworkObjectMessage
 {
 public:
-	NetworkObjectDestroyMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_DESTROY_MESSAGE) {};
+	NetworkObjectDestroyMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_DESTROY_MESSAGE,
+		PacketReliability::RELIABLE_ORDERED) {};
+
+	//no need, we can use NetworkObjectMessage versions with no issue
+	//virtual bool WritePacketBitstream(RakNet::BitStream* bs) override;
+	//virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override;
 };
 
 class NetworkObjectUpdateMessage : public NetworkObjectMessage
@@ -121,7 +179,27 @@ class NetworkObjectUpdateMessage : public NetworkObjectMessage
 public:
 	float newPos[2];
 	float newRot;
-	NetworkObjectUpdateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_UPDATE_MESSAGE), newPos(), newRot(0) {};
+	NetworkObjectUpdateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_UPDATE_MESSAGE,
+		PacketReliability::UNRELIABLE), 
+		newPos(), 
+		newRot(0) {};
+
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::WritePacketBitstream(bs);
+		bs->Write(newPos[0]);
+		bs->Write(newPos[1]);
+		bs->Write(newRot);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::ReadPacketBitstream(bs);
+		bs->Read(newPos[0]);
+		bs->Read(newPos[1]);
+		bs->Read(newRot);
+		return true;
+	}
 };
 
 

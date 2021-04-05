@@ -38,6 +38,10 @@ void ClientGameState::update()
 {
 	for (int i = 0; i < m_RemoteInputEventCache.size(); ++i)
 	{
+		if (m_RemoteInputEventCache[i] == nullptr)
+		{
+			continue;
+		}
 		if (NotificationMessage* msg = dynamic_cast<NotificationMessage*>(m_RemoteInputEventCache[i]))
 		{
 			RakNet::MessageID id = msg->getMessageID();
@@ -47,6 +51,7 @@ void ClientGameState::update()
 			case ID_CONNECTION_REQUEST_ACCEPTED:
 			{
 				printf("Our connection request has been accepted.\n");
+				m_ServerGUID = msg->m_Sender;
 			}
 			case ID_REMOTE_DISCONNECTION_NOTIFICATION:
 			case ID_REMOTE_CONNECTION_LOST:
@@ -87,7 +92,7 @@ void ClientGameState::update()
 				newEntity = new jr::Enemy();
 				break;
 			default:
-				return;
+				continue;
 			}
 			newEntity->m_NetID = msg->objectId;
 			
@@ -97,7 +102,9 @@ void ClientGameState::update()
 			jr::Entity* e = getEntityById(msg->objectId);
 			e->m_OwnerAddress = msg->newAddress;
 		}
+
 		delete m_RemoteInputEventCache[i];
+		m_RemoteInputEventCache[i] = nullptr;
 	}
 	m_RemoteInputEventCache.clear();
 	GameState::update();
@@ -105,4 +112,13 @@ void ClientGameState::update()
 
 void ClientGameState::handleRemoteOutput()
 {
+	for (int i = 0; i < m_RemoteOutputEventCache.size(); ++i)
+	{
+		RakNet::BitStream bs;
+		m_RemoteOutputEventCache[i]->WritePacketBitstream(&bs);
+		m_Peer->Send(&bs, m_RemoteOutputEventCache[i]->m_Priority, m_RemoteOutputEventCache[i]->m_Reliablity, 0, m_ServerGUID, false); //this needs to have more control per message. but ill do this later
+
+		delete m_RemoteOutputEventCache[i];
+	}
+	m_RemoteOutputEventCache.clear();
 }

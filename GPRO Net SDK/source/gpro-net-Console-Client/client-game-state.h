@@ -26,6 +26,7 @@ public:
 	
 	void handleRemoteOutput() override;
 
+	RakNet::RakNetGUID m_ServerGUID;
 	///
 	/// Used only when a message from the server is received
 	/// NOTE: cannot create objects on the server

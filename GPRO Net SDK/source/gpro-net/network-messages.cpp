@@ -53,19 +53,3 @@ void NetworkMessage::CreatePacketHeader(RakNet::BitStream* bs, int msgCount)
 	bs->Write((RakNet::MessageID)SharedNetworkMessageID::ID_PACKAGED_PACKET);
 	bs->Write(msgCount);
 }
-
-bool NetworkObjectMessage::WritePacketBitstream(RakNet::BitStream* bs)
-{
-	NetworkMessage::WritePacketBitstream(bs);
-	//bs->Write(objectId);
-	//bs->Write(objectType);
-	return false;
-}
-
-bool NetworkObjectMessage::ReadPacketBitstream(RakNet::BitStream* bs)
-{
-	//assume id has been read
-	//bs->Read(objectId);
-	//bs->Read(objectType);
-	return false;
-}

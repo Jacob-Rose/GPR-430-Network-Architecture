@@ -15,6 +15,7 @@
 #include "network-messages.h"
 #include "player.h"
 #include "enemy.h"
+#include "shared-net.h"
 
 namespace jr
 {
@@ -42,6 +43,8 @@ protected:
 	sf::Image m_BackgroundImage; //synced on network
 	sf::Texture m_BackgroundTexture; //loads from m_BackgroundImage
 
+	sf::Clock frameClock; //to get dt
+
 	//State Information
 	bool m_IsInit = false;
 	
@@ -55,6 +58,8 @@ protected:
 	std::vector<jr::Entity*> m_NetworkEntities = std::vector<jr::Entity*>();
 
 	jr::Entity* getEntityById(int netID);
+
+
 
 public:
 

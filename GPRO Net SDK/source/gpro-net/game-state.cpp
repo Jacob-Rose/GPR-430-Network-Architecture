@@ -23,7 +23,8 @@ void GameState::runGameLoop()
 
 void GameState::update()
 {
-	handleRemoteInput();
+	sf::Time dt = frameClock.restart();
+	handleRemoteInput(); //could be on seperate thread?
 
 	sf::Event event;
 	while (m_GameWindow.pollEvent(event))
@@ -45,15 +46,40 @@ void GameState::update()
 	backgroundSprite.setTexture(m_BackgroundTexture);
 
 	m_GameWindow.draw(backgroundSprite);
+	//Update Entities
+	for (int i = 0; i < m_NetworkEntities.size(); i++)
+	{
+		RakNet::RakNetGUID myID = m_Peer->GetMyGUID();
+		EntityUpdateInfo eui;
+		eui.isOwner = myID.systemIndex == m_NetworkEntities[i]->m_OwnerAddress.systemIndex;
+		eui.dt = dt;
+		eui.window = &m_GameWindow;
+		m_NetworkEntities[i]->Update(eui);
+	}
+
 
 	
 	//Draw Entities
 	for (int i = 0; i < m_NetworkEntities.size(); i++)
 	{
 		m_GameWindow.draw(m_NetworkEntities[i]->m_Sprite);
+
+		if (m_NetworkEntities[i]->m_OwnerAddress.systemIndex == m_Peer->GetMyGUID().systemIndex)
+		{
+			NetworkObjectUpdateMessage* msg = new NetworkObjectUpdateMessage();
+			msg->objectId = m_NetworkEntities[i]->m_NetID;
+			msg->newPos[0] = m_NetworkEntities[i]->m_Position.x;
+			msg->newPos[1] = m_NetworkEntities[i]->m_Position.y;
+			msg->newRot = m_NetworkEntities[i]->m_Rotation;
+			m_RemoteOutputEventCache.push_back(msg);
+		}
 	}
 
+	//send buffer to monitor
 	m_GameWindow.display();
+
+	//send output network messages
+	handleRemoteOutput(); //could be on seperate thread?
 }
 
 jr::Entity* jr::GameState::getEntityById(int netID)

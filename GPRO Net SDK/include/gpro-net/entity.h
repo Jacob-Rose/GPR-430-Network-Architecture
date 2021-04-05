@@ -7,6 +7,8 @@
 
 #include <RakNet/RakNetTypes.h>
 
+#include "gpro-net/shared-net.h"
+
 namespace jr
 {
 	class Entity;
@@ -22,7 +24,7 @@ public:
 	sf::Vector2f m_Position;
 	float m_Rotation;
 
-	virtual void Update();
+	virtual void Update(EntityUpdateInfo updateInfo);
 
 	friend class GameState;
 protected:
