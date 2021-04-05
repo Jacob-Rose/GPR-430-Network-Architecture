@@ -16,9 +16,10 @@ class jr::ClientGameState : public jr::GameState
 protected:
 
 public:
-	ClientGameState(std::string ip, short port);
+	ClientGameState();
 
 	virtual void init() override;
+	virtual void connect(std::string ip, short port);
 	virtual void cleanup() override;
 
 	void update() override;

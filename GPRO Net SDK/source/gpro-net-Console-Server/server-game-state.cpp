@@ -4,9 +4,7 @@
 
 ServerGameState::ServerGameState() : GameState()
 {
-	RakNet::SocketDescriptor sd(SERVER_PORT, 0);
-	m_Peer->Startup(MAX_CLIENTS, &sd, 1);
-	m_Peer->SetMaximumIncomingConnections(MAX_CLIENTS);
+
 }
 
 void ServerGameState::update()
@@ -21,8 +19,7 @@ void ServerGameState::update()
 			case ID_NEW_INCOMING_CONNECTION:
 			case ID_REMOTE_NEW_INCOMING_CONNECTION:
 			{
-				//todo player joined, make them join lobby
-				//m_LobbyPlayers.push_back(msg->m_Sender);
+				printf("A client has connected.\n");
 
 				//Once they join a lobby send PlayerActiveOrderMessage to check if player or spectator
 				//spawn player
@@ -51,8 +48,6 @@ void ServerGameState::update()
 				updateMsg->newPos[1] = 0; //ypos
 				updateMsg->newRot = 0.0f; //rot
 				m_RemoteOutputEventCache.push_back(updateMsg);
-
-				std::cout << "Player Connected \n";
 
 				break;
 			}
@@ -105,6 +100,10 @@ void ServerGameState::init()
 	if (!m_IsInit)
 	{
 		GameState::init();
+
+		RakNet::SocketDescriptor sd(SERVER_PORT, 0);
+		m_Peer->Startup(MAX_CLIENTS, &sd, 1);
+		m_Peer->SetMaximumIncomingConnections(MAX_CLIENTS);
 		m_IsInit = true;
 	}
 }

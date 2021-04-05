@@ -36,10 +36,13 @@ int main(void)
 	//NetworkState ns[1] = { 0 };
 
 	const unsigned short SERVER_PORT = 7777;
-	const char* SERVER_IP = "192.168.1.71"; //update every time
+	const char* SERVER_IP = "172.16.2.51"; //update every time
 
-	jr::ClientGameState* gs = new jr::ClientGameState(SERVER_IP, SERVER_PORT);
+	jr::ClientGameState* gs = new jr::ClientGameState();
 	
+	gs->init();
+	gs->connect(SERVER_IP, SERVER_PORT);
+
 	gs->runGameLoop();
 
 	delete gs;

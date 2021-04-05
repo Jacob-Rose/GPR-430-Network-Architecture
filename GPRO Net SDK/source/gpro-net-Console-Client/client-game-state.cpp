@@ -2,9 +2,9 @@
 
 using namespace jr;
 
-ClientGameState::ClientGameState(std::string ip, short port) : GameState()
+ClientGameState::ClientGameState() : GameState()
 {
-	m_Peer->Connect(ip.c_str(), port, 0, 0);
+	
 }
 
 void jr::ClientGameState::init()
@@ -12,8 +12,17 @@ void jr::ClientGameState::init()
 	if (!m_IsInit)
 	{
 		GameState::init();
+		
+		
 		m_IsInit = true;
 	}
+}
+
+void jr::ClientGameState::connect(std::string ip, short port)
+{
+	RakNet::SocketDescriptor sd;
+	m_Peer->Startup(1, &sd, 1);
+	m_Peer->Connect(ip.c_str(), port, 0, 0);
 }
 
 void jr::ClientGameState::cleanup()
@@ -32,12 +41,29 @@ void ClientGameState::update()
 		if (NotificationMessage* msg = dynamic_cast<NotificationMessage*>(m_RemoteInputEventCache[i]))
 		{
 			RakNet::MessageID id = msg->getMessageID();
-			/*
+			
 			switch (id)
 			{
-				
+			case ID_CONNECTION_REQUEST_ACCEPTED:
+			{
+				printf("Our connection request has been accepted.\n");
 			}
-			*/
+			case ID_REMOTE_DISCONNECTION_NOTIFICATION:
+			case ID_REMOTE_CONNECTION_LOST:
+
+				//a player disconnected (not us)
+				break;
+			case ID_NO_FREE_INCOMING_CONNECTIONS:
+				printf("The server is full, cannot join.\n");
+				break;
+			case ID_DISCONNECTION_NOTIFICATION:
+				printf("We have disconnected.\n");
+				break;
+			case ID_CONNECTION_LOST:
+				printf("We lost connection.\n");
+				break;
+			}
+			
 		}
 		else if (NetworkObjectUpdateMessage* msg = dynamic_cast<NetworkObjectUpdateMessage*>(m_RemoteInputEventCache[i]))
 		{
@@ -73,7 +99,7 @@ void ClientGameState::update()
 		}
 		delete m_RemoteInputEventCache[i];
 	}
-
+	m_RemoteInputEventCache.clear();
 	GameState::update();
 }
 
