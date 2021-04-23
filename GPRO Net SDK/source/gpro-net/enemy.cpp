@@ -9,6 +9,6 @@ jr::Enemy::~Enemy()
 {
 }
 
-void jr::Enemy::Update(EntityUpdateInfo info)
+void jr::Enemy::update(EntityUpdateInfo info)
 {
 }

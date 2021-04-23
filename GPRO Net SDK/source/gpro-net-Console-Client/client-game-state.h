@@ -23,8 +23,13 @@ public:
 	virtual void cleanup() override;
 
 	void update() override;
+	void handleSFMLEvent(sf::Event e) override;
 	
 	void handleRemoteOutput() override;
+
+	sf::View m_PlayerView;
+
+	jr::Player* m_LocalPlayer = nullptr;
 
 	RakNet::RakNetGUID m_ServerGUID;
 	///

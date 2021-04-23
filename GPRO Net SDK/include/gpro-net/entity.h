@@ -1,39 +1,52 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+//SFML
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/Sprite.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
+//RakNet
 #include <RakNet/RakNetTypes.h>
 
-#include "gpro-net/shared-net.h"
+//In House
+#include <gpro-net/shared-net.h>
+#include <gpro-net/network-messages.h>
+#include <gpro-net/netid.h>
 
 namespace jr
 {
 	class Entity;
-	class GameState;
+	class GameState; //just a def to help us friend it
 }
 
 class jr::Entity
 {
 public:
-	unsigned int m_NetID;
-	RakNet::RakNetGUID m_OwnerAddress;
-
-	sf::Vector2f m_Position;
-	float m_Rotation;
-
-	virtual void Update(EntityUpdateInfo updateInfo);
-
-	friend class GameState;
-protected:
-	sf::Sprite m_Sprite;
-	sf::Texture m_Texture; //could be static so all players use same tex resource, but im lazy and worried about time
-
 	//Should be called by the client or server
 	Entity();
 	~Entity();
+
+	jr::NetID m_NetID;
+	RakNet::RakNetGUID m_OwnerAddress;
+
+	sf::Vector2f m_Position;
+	sf::Vector2f m_Velocity; //useful for network prediction
+	float m_Rotation;
+
+	sf::Sprite m_Sprite;
+
+	virtual void update(EntityUpdateInfo updateInfo) = 0;
+	//std::vector<jr::Entity> m_ChildObjects = std::vector<jr::Entity>();
+
+
+	std::vector<NetworkMessage*> m_RemoteOutputCache = std::vector<NetworkMessage*>();
+
+
+	friend class GameState;
+protected:
+	bool m_DeleteMe = false; //indicates ready to be deleted
+
 
 };
 

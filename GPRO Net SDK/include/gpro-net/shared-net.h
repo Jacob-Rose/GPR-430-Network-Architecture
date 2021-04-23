@@ -14,7 +14,7 @@ struct EntityUpdateInfo : public GameUpdateInfo
 {
 public:
 	bool isOwner;
-	sf::Window* window;
+	sf::RenderWindow* window;
 };
 
 #endif

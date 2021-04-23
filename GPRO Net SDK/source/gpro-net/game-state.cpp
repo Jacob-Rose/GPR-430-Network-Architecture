@@ -1,5 +1,8 @@
 #include "..\..\include\gpro-net\game-state.h"
 
+#include "gpro-net/resource-manager.h"
+#include "gpro-net/player.h"
+
 using namespace jr; //jakerose namespace
 
 void GameState::handleRemoteInput()
@@ -29,51 +32,68 @@ void GameState::update()
 	sf::Event event;
 	while (m_GameWindow.pollEvent(event))
 	{
-		// "close requested" event: we close the window
-		if (event.type == sf::Event::Closed)
-		{
-			m_GameWindow.close();
-		}
+		handleSFMLEvent(event);
 	}
 
 	m_GameWindow.clear(sf::Color::Black); //clear window with black first
-
-
-
-	m_BackgroundTexture.update(m_BackgroundImage);
-
-	sf::Sprite backgroundSprite;
-	backgroundSprite.setTexture(m_BackgroundTexture);
-
-	m_GameWindow.draw(backgroundSprite);
-	//Update Entities
-	for (int i = 0; i < m_NetworkEntities.size(); i++)
-	{
-		RakNet::RakNetGUID myID = m_Peer->GetMyGUID();
-		EntityUpdateInfo eui;
-		eui.isOwner = myID.systemIndex == m_NetworkEntities[i]->m_OwnerAddress.systemIndex;
-		eui.dt = dt;
-		eui.window = &m_GameWindow;
-		m_NetworkEntities[i]->Update(eui);
-	}
-
-
 	
-	//Draw Entities
-	for (int i = 0; i < m_NetworkEntities.size(); i++)
-	{
-		m_GameWindow.draw(m_NetworkEntities[i]->m_Sprite);
+	m_GameWindow.draw(m_BackgroundSprite);
 
-		if (m_NetworkEntities[i]->m_OwnerAddress.systemIndex == m_Peer->GetMyGUID().systemIndex)
+	//Update Entities
+	for (int layer = 0; layer < (int)Layers::LAYERCOUNT; ++layer)
+	{
+		for (int index = 0; index < m_EntityLayers[layer].size(); ++index)
 		{
-			NetworkObjectUpdateMessage* msg = new NetworkObjectUpdateMessage();
-			msg->objectId = m_NetworkEntities[i]->m_NetID;
-			msg->newPos[0] = m_NetworkEntities[i]->m_Position.x;
-			msg->newPos[1] = m_NetworkEntities[i]->m_Position.y;
-			msg->newRot = m_NetworkEntities[i]->m_Rotation;
-			m_RemoteOutputEventCache.push_back(msg);
+			jr::Entity* e = m_EntityLayers[layer][index];
+			if (e == nullptr) continue;
+
+
+			RakNet::RakNetGUID myID = m_Peer->GetMyGUID();
+			EntityUpdateInfo eui;
+			eui.isOwner = myID.systemIndex == e->m_OwnerAddress.systemIndex;
+			eui.dt = dt;
+			eui.window = &m_GameWindow;
+			e->update(eui);
+
+			//Each object can have its own outputs ready to be sent
+			for (int j = 0; j < e->m_RemoteOutputCache.size(); ++j)
+			{
+				m_RemoteOutputEventCache.push_back(e->m_RemoteOutputCache[j]);
+			}
+			e->m_RemoteOutputCache.clear();
+
+			//Draw Entities
+			m_GameWindow.draw(e->m_Sprite);
+			if (layer == (unsigned char)Layers::PLAYER)
+			{
+				if (jr::Player* entityAsPlayer = dynamic_cast<jr::Player*>(e))
+				{
+					m_GameWindow.draw(entityAsPlayer->m_ArmSprite);
+				}
+			}
+			else if (layer == (unsigned char)Layers::PROJECTILE)
+			{
+				if (jr::Projectile* entityAsProjectile = dynamic_cast<jr::Projectile*>(e))
+				{
+					//run collision on players
+				}
+			}
+			
+
+
+			if (e->m_DeleteMe)
+			{
+				delete e;
+				m_EntityLayers[layer][index] = nullptr;
+				NetworkObjectDestroyMessage* msg = new NetworkObjectDestroyMessage();
+				msg->m_NetID.layer = layer;
+				msg->m_NetID.id = index;
+				m_RemoteOutputEventCache.push_back(msg);
+			}
 		}
 	}
+
+
 
 	//send buffer to monitor
 	m_GameWindow.display();
@@ -82,16 +102,14 @@ void GameState::update()
 	handleRemoteOutput(); //could be on seperate thread?
 }
 
-jr::Entity* jr::GameState::getEntityById(int netID)
+void jr::GameState::handleSFMLEvent(sf::Event e)
 {
-	for (int i = 0; i < m_NetworkEntities.size(); i++)
+	// "close requested" event: we close the window
+	if (e.type == sf::Event::Closed)
 	{
-		if (m_NetworkEntities[i]->m_NetID == netID)
-		{
-			return m_NetworkEntities[i];
-		}
+		m_GameWindow.close();
 	}
-	return nullptr;
+
 }
 
 GameState::GameState() : GameState(sf::VideoMode(800, 600))
@@ -113,9 +131,32 @@ void GameState::init()
 {
 	if (!m_IsInit)
 	{
+		jr::ResourceManager::initSingleton();
+
 		m_Peer = RakNet::RakPeerInterface::GetInstance();
-		m_BackgroundImage.create(200, 200);
-		m_BackgroundTexture.create(200, 200);
+
+		
+		//Set up all layers (sets itself all up without any additional code
+		for (unsigned char layer = 0; layer < (int)Layers::LAYERCOUNT; ++layer)
+		{
+			m_EntityLayers[layer] = std::vector<jr::Entity*>(LAYER_SIZES[layer], nullptr);
+		}
+		
+
+		//Setup Game
+		m_BackgroundTexture.create(GRID_SIZE, GRID_SIZE);
+		sf::Image bImage = m_BackgroundTexture.copyToImage();
+		for (unsigned short xPos = 0; xPos < GRID_SIZE; ++xPos)
+		{
+			for (unsigned short yPos = 0; yPos < GRID_SIZE; ++yPos)
+			{
+				bImage.setPixel(xPos, yPos, sf::Color::White);
+			}
+		}
+
+		m_BackgroundTexture.loadFromImage(bImage);
+		m_BackgroundSprite.setScale(sf::Vector2f(16.0f, 16.0f));
+		m_BackgroundSprite.setTexture(m_BackgroundTexture);
 	}
 }
 
@@ -123,7 +164,23 @@ void GameState::cleanup()
 {
 	if (m_IsInit)
 	{
+		//Cleanup game
+		for (unsigned char layer = 0; layer < (int)Layers::LAYERCOUNT; ++layer)
+		{
+			for (unsigned char itemID = 0; itemID < m_EntityLayers[layer].size(); ++itemID)
+			{
+				if (m_EntityLayers[layer][itemID] != nullptr)
+				{
+					delete m_EntityLayers[layer][itemID];
+				}
+			}
+			m_EntityLayers[layer].clear();
+		}
+
+
+		m_Peer->Shutdown(0);
 		RakNet::RakPeerInterface::DestroyInstance(m_Peer);
 
+		jr::ResourceManager::cleanupSingleton();
 	}
 }

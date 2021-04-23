@@ -5,3 +5,4 @@
 set gpro_net_sdk=%~dp0
 set /p gpro_net_rdtarget=<"%gpro_net_sdk%\resource\cfg-remote.txt"
 "%gpro_net_sdk%\project\VisualStudio\_SLN\gpro-net-sdk-remote\gpro-net-sdk-remote.sln"
+exit

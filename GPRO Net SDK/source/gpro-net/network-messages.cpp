@@ -42,6 +42,13 @@ NetworkMessage* NetworkMessage::DecypherMessage(RakNet::BitStream* bs, RakNet::R
 	case (RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_OBJECT_UPDATE_MESSAGE:
 		msg = new NetworkObjectUpdateMessage();
 		break;
+	case (RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE:
+		msg = new NetworkObjectAuthorityChangeMessage();
+		break;
+	case (RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_OBJECT_CREATE_REQUEST_MESSAGE:
+		msg = new NetworkObjectRequestCreateMessage();
+		break;
+
 	}
 	msg->m_Sender = sender;
 	msg->ReadPacketBitstream(bs);

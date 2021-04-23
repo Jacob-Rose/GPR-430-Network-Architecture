@@ -13,25 +13,45 @@
 
 //In-House
 #include "network-messages.h"
+#include "entity.h"
 #include "player.h"
 #include "enemy.h"
 #include "shared-net.h"
+#include "projectile.h"
 
 namespace jr
 {
 	class GameState;
+	struct EntityLayer;
+
 }
 
-class GameStateSettings
-{
-public:
-	const static short NETWORK_OBJECT_START_SIZE = 8;
-	const static short NETWORK_OBJECT_ARRAY_INCREMENT_AMOUNT = 8;
-};
 
 class jr::GameState
 {
 protected:
+
+	const static short GRID_SIZE = 128;
+
+	enum class Layers
+	{
+		WORLD_BASE = 0,
+		ENVIORMENT, //obstacles
+		PLAYER,
+		ENEMY,
+		PROJECTILE,
+		LAYERCOUNT
+	};
+
+	const unsigned short LAYER_SIZES[(int)Layers::LAYERCOUNT] = { 
+		1 /*The main world*/, 
+		64 /*64 obstacles*/, 
+		8 /*8 players*/, 
+		24 /*24 Enemies*/, 
+		127 /*127 projectiles*/ 
+	};
+
+
 	//||||||||||||| NETWORKING ||||||||||||
 	RakNet::RakPeerInterface* m_Peer;
 	std::vector<NetworkMessage*> m_RemoteInputEventCache; //filed in input
@@ -40,8 +60,8 @@ protected:
 	//||||||||||||| SFML |||||||||||||||||||
 	sf::RenderWindow m_GameWindow;
 
-	sf::Image m_BackgroundImage; //synced on network
-	sf::Texture m_BackgroundTexture; //loads from m_BackgroundImage
+	sf::Texture m_BackgroundTexture; //synced on network, thus doesnt use resource manager
+	sf::Sprite m_BackgroundSprite;
 
 	sf::Clock frameClock; //to get dt
 
@@ -52,15 +72,11 @@ protected:
 	virtual void handleRemoteInput(); //decypher packets and store in m_InputEventCache
 
 	virtual void update();
+	virtual void handleSFMLEvent(sf::Event e);
 
 	virtual void handleRemoteOutput() = 0; //send out all packets needed in the m_OutputEventCache
 
-	std::vector<jr::Entity*> m_NetworkEntities = std::vector<jr::Entity*>();
-
-	jr::Entity* getEntityById(int netID);
-
-
-
+	std::vector<jr::Entity*> m_EntityLayers[(int)Layers::LAYERCOUNT]; //layers so objects have draw order + for collisions
 public:
 
 	GameState();

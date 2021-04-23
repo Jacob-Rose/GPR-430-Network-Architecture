@@ -17,20 +17,28 @@
 #include <RakNet/GetTime.h>
 #include <RakNet/PacketPriority.h>
 
+#include <gpro-net/netid.h>
+
+
+#pragma warning( disable : 26812) //Warning for EnumShouldBeEnumClass | We cannot fix most of these issues as they are rooted in RakNet and I do not want to modify
+
 
 enum class SharedNetworkMessageID
 {
 	ID_PACKAGED_PACKET = ID_USER_PACKET_ENUM + 1,
 	ID_NETWORK_OBJECT_CREATED_MESSAGE,
+	ID_NETWORK_OBJECT_CREATE_REQUEST_MESSAGE,
 	ID_NETWORK_OBJECT_DESTROY_MESSAGE,
 	ID_NETWORK_OBJECT_UPDATE_MESSAGE,
 	ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE,
+	ID_PLAYER_PAINT_SHOT_MESSAGE
 };
 
 enum class NetworkObjectID
 {
 	NULL_OBJECT_ID,
 	PLAYER_OBJECT_ID,
+	BULLET_OBJECT_ID,
 	ENEMY_OBJECT_ID,
 	OBJECT_ID_COUNT
 };
@@ -39,6 +47,7 @@ class TimestampMessage;
 class PlayerMoveMessage;
 class DisplayNameChangeMessage;
 class NetworkMessage;
+
 
 
 class NetworkMessage
@@ -92,26 +101,92 @@ public:
 	}
 };
 
-
-
-class NetworkObjectMessage : public NetworkMessage
+class NetworkObjectRequestCreateMessage : public NetworkMessage
 {
-protected:
-	NetworkObjectMessage(SharedNetworkMessageID id, PacketReliability reliability) : 
-		NetworkMessage((RakNet::MessageID)id, reliability, PacketPriority::HIGH_PRIORITY), objectId(0) { } //abstract
 public:
-	short objectId; //directly correlates to object id
+	NetworkObjectID objectType;
+	float objectPos[2];
+	float objectRot;
+
+	NetworkObjectRequestCreateMessage() : 
+		NetworkMessage((RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_OBJECT_CREATE_REQUEST_MESSAGE,
+		PacketReliability::RELIABLE_ORDERED,
+		PacketPriority::HIGH_PRIORITY) { }
 
 	//these do nothing as the notification message stores the messageID and nothing more
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
 	{
 		NetworkMessage::WritePacketBitstream(bs);
-		bs->Write(objectId);
+		bs->Write(objectType);
+		bs->Write(objectPos[0]);
+		bs->Write(objectPos[1]);
+		bs->Write(objectRot);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override {
+		bs->Read(objectType);
+		bs->Read(objectPos[0]);
+		bs->Read(objectPos[1]);
+		bs->Read(objectRot);
+		return true;
+	}
+};
+
+class PlayerShotPaintMessage : public NetworkMessage
+{
+public:
+	int pixelPos[2];
+	int pixelColorIndex;
+
+	PlayerShotPaintMessage() :
+		NetworkMessage((RakNet::MessageID)SharedNetworkMessageID::ID_PLAYER_PAINT_SHOT_MESSAGE,
+			PacketReliability::RELIABLE_ORDERED,
+			PacketPriority::HIGH_PRIORITY) { }
+	
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkMessage::WritePacketBitstream(bs);
+		bs->Write(pixelPos[0]);
+		bs->Write(pixelPos[1]);
 		return true;
 	}
 	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
 	{
-		bs->Read(objectId);
+		bs->Read(pixelPos[0]);
+		bs->Read(pixelPos[1]);
+		return true;
+	}
+};
+
+class PaintPixelMessage : public NetworkMessage
+{
+	int pixelPos[2];
+
+
+};
+
+// |||||||||| NETWORK OBJECT MESSAGES |||||||||||||||||||
+
+class NetworkObjectMessage : public NetworkMessage
+{
+protected:
+	NetworkObjectMessage(SharedNetworkMessageID id, PacketReliability reliability) : 
+		NetworkMessage((RakNet::MessageID)id, reliability, PacketPriority::HIGH_PRIORITY) { } //abstract
+public:
+	jr::NetID m_NetID; //directly correlates to object id
+
+	//these do nothing as the notification message stores the messageID and nothing more
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkMessage::WritePacketBitstream(bs);
+		bs->Write(m_NetID.id);
+		bs->Write(m_NetID.layer);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		bs->Read(m_NetID.id);
+		bs->Read(m_NetID.layer);
 		return true;
 	}
 };
@@ -123,7 +198,7 @@ public:
 
 	NetworkObjectAuthorityChangeMessage() : 
 		NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE,
-			PacketReliability::RELIABLE_ORDERED) {};
+			PacketReliability::RELIABLE_ORDERED) {}
 
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
 	{
@@ -147,7 +222,7 @@ public:
 	NetworkObjectCreateMessage() : NetworkObjectMessage(
 		SharedNetworkMessageID::ID_NETWORK_OBJECT_CREATED_MESSAGE,
 		PacketReliability::RELIABLE_ORDERED), 
-		objectType(NetworkObjectID::NULL_OBJECT_ID) {};
+		objectType(NetworkObjectID::NULL_OBJECT_ID) {}
 
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
 	{
@@ -167,7 +242,7 @@ class NetworkObjectDestroyMessage : public NetworkObjectMessage
 {
 public:
 	NetworkObjectDestroyMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_DESTROY_MESSAGE,
-		PacketReliability::RELIABLE_ORDERED) {};
+		PacketReliability::RELIABLE_ORDERED) {}
 
 	//no need, we can use NetworkObjectMessage versions with no issue
 	//virtual bool WritePacketBitstream(RakNet::BitStream* bs) override;
@@ -182,7 +257,7 @@ public:
 	NetworkObjectUpdateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_UPDATE_MESSAGE,
 		PacketReliability::UNRELIABLE), 
 		newPos(), 
-		newRot(0) {};
+		newRot(0) {}
 
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
 	{

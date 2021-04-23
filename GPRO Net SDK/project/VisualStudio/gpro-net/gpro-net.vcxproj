@@ -180,8 +180,11 @@
     <ClInclude Include="..\..\..\include\gpro-net\game-state.h" />
     <ClInclude Include="..\..\..\include\gpro-net\gpro-net-console.h" />
     <ClInclude Include="..\..\..\include\gpro-net\gpro-net.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\netid.h" />
     <ClInclude Include="..\..\..\include\gpro-net\network-messages.h" />
     <ClInclude Include="..\..\..\include\gpro-net\player.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\projectile.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\resource-manager.h" />
     <ClInclude Include="..\..\..\include\gpro-net\shared-net.h" />
   </ItemGroup>
   <ItemGroup>
@@ -192,6 +195,8 @@
     <ClCompile Include="..\..\..\source\gpro-net\gpro-net.c" />
     <ClCompile Include="..\..\..\source\gpro-net\network-messages.cpp" />
     <ClCompile Include="..\..\..\source\gpro-net\player.cpp" />
+    <ClCompile Include="..\..\..\source\gpro-net\projectile.cpp" />
+    <ClCompile Include="..\..\..\source\gpro-net\resource-manager.cpp" />
     <ClCompile Include="..\..\..\source\gpro-net\shared-net.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
