@@ -1,5 +1,6 @@
 #include "gpro-net/projectile.h"
 #include "gpro-net/resource-manager.h"
+#include "gpro-net/game-state.h"
 #include <math.h>
 
 jr::Projectile::Projectile()
@@ -30,5 +31,4 @@ void jr::Projectile::update(EntityUpdateInfo updateInfo)
 	{
 		m_DeleteMe = true;
 	}
-	
 }

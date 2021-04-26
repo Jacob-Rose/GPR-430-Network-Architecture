@@ -30,7 +30,9 @@ enum class SharedNetworkMessageID
 	ID_NETWORK_OBJECT_CREATE_REQUEST_MESSAGE,
 	ID_NETWORK_OBJECT_DESTROY_MESSAGE,
 	ID_NETWORK_OBJECT_UPDATE_MESSAGE,
+	ID_NETWORK_OBJECT_HARD_UPDATE_MESSAGE,
 	ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE,
+	ID_NETWORK_PROJECTILE_HIT_MESSAGE,
 	ID_PLAYER_PAINT_SHOT_MESSAGE
 };
 
@@ -128,6 +130,36 @@ public:
 		bs->Read(objectPos[0]);
 		bs->Read(objectPos[1]);
 		bs->Read(objectRot);
+		return true;
+	}
+};
+
+class NetworkProjectileHitMessage : public NetworkMessage
+{
+public:
+
+	NetworkProjectileHitMessage() :
+		NetworkMessage((RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_PROJECTILE_HIT_MESSAGE, PacketReliability::RELIABLE, PacketPriority::HIGH_PRIORITY) { } //abstract
+
+	jr::NetID m_ProjectileNetID;
+	jr::NetID m_HitObjectNetID; 
+
+	//these do nothing as the notification message stores the messageID and nothing more
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkMessage::WritePacketBitstream(bs);
+		bs->Write(m_ProjectileNetID.id);
+		bs->Write(m_ProjectileNetID.layer);
+		bs->Write(m_HitObjectNetID.id);
+		bs->Write(m_HitObjectNetID.layer);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		bs->Read(m_ProjectileNetID.id);
+		bs->Read(m_ProjectileNetID.layer);
+		bs->Read(m_HitObjectNetID.id);
+		bs->Read(m_HitObjectNetID.layer);
 		return true;
 	}
 };
@@ -253,18 +285,26 @@ class NetworkObjectUpdateMessage : public NetworkObjectMessage
 {
 public:
 	float newPos[2];
+	float newVelocity[2];
 	float newRot;
+	bool hard; //do we dead-reckon?
 	NetworkObjectUpdateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_OBJECT_UPDATE_MESSAGE,
 		PacketReliability::UNRELIABLE), 
 		newPos(), 
-		newRot(0) {}
+		newVelocity(),
+		newRot(0),
+		hard(false)
+	{}
 
 	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
 	{
 		NetworkObjectMessage::WritePacketBitstream(bs);
 		bs->Write(newPos[0]);
 		bs->Write(newPos[1]);
+		bs->Write(newVelocity[0]);
+		bs->Write(newVelocity[1]);
 		bs->Write(newRot);
+		bs->Write(hard);
 		return true;
 	}
 	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
@@ -272,10 +312,12 @@ public:
 		NetworkObjectMessage::ReadPacketBitstream(bs);
 		bs->Read(newPos[0]);
 		bs->Read(newPos[1]);
+		bs->Read(newVelocity[0]);
+		bs->Read(newVelocity[1]);
 		bs->Read(newRot);
+		bs->Read(hard);
 		return true;
 	}
 };
-
 
 #endif //_NETWORK_MESSAGES_H

@@ -2,6 +2,7 @@
 
 #include "gpro-net/resource-manager.h"
 #include "gpro-net/player.h"
+#include "gpro-net/tile.hpp"
 
 using namespace jr; //jakerose namespace
 
@@ -18,10 +19,21 @@ void GameState::handleRemoteInput()
 
 void GameState::runGameLoop()
 {
-	while (m_GameWindow.isOpen())
+	if (m_GameWindow != nullptr)
 	{
-		update();
+		while (m_GameWindow->isOpen() && m_GameActive)
+		{
+			update();
+		}
 	}
+	else
+	{
+		while (m_GameActive)
+		{
+			update();
+		}
+	}
+
 }
 
 void GameState::update()
@@ -30,14 +42,19 @@ void GameState::update()
 	handleRemoteInput(); //could be on seperate thread?
 
 	sf::Event event;
-	while (m_GameWindow.pollEvent(event))
-	{
-		handleSFMLEvent(event);
-	}
 
-	m_GameWindow.clear(sf::Color::Black); //clear window with black first
+	if (m_GameWindow != nullptr)
+	{
+		while (m_GameWindow->pollEvent(event))
+		{
+			handleSFMLEvent(event);
+		}
+
+		m_GameWindow->clear(sf::Color::Black); //clear window with black first
+
+		m_GameWindow->draw(m_BackgroundMap);
+	}
 	
-	m_GameWindow.draw(m_BackgroundSprite);
 
 	//Update Entities
 	for (int layer = 0; layer < (int)Layers::LAYERCOUNT; ++layer)
@@ -52,7 +69,7 @@ void GameState::update()
 			EntityUpdateInfo eui;
 			eui.isOwner = myID.systemIndex == e->m_OwnerAddress.systemIndex;
 			eui.dt = dt;
-			eui.window = &m_GameWindow;
+			eui.gameState = this;
 			e->update(eui);
 
 			//Each object can have its own outputs ready to be sent
@@ -63,20 +80,9 @@ void GameState::update()
 			e->m_RemoteOutputCache.clear();
 
 			//Draw Entities
-			m_GameWindow.draw(e->m_Sprite);
-			if (layer == (unsigned char)Layers::PLAYER)
+			if (m_GameWindow != nullptr)
 			{
-				if (jr::Player* entityAsPlayer = dynamic_cast<jr::Player*>(e))
-				{
-					m_GameWindow.draw(entityAsPlayer->m_ArmSprite);
-				}
-			}
-			else if (layer == (unsigned char)Layers::PROJECTILE)
-			{
-				if (jr::Projectile* entityAsProjectile = dynamic_cast<jr::Projectile*>(e))
-				{
-					//run collision on players
-				}
+				m_GameWindow->draw(e->m_Sprite);
 			}
 			
 
@@ -96,7 +102,11 @@ void GameState::update()
 
 
 	//send buffer to monitor
-	m_GameWindow.display();
+	if (m_GameWindow != nullptr)
+	{
+		m_GameWindow->display();
+	}
+
 
 	//send output network messages
 	handleRemoteOutput(); //could be on seperate thread?
@@ -104,21 +114,32 @@ void GameState::update()
 
 void jr::GameState::handleSFMLEvent(sf::Event e)
 {
+	//only called if window exist, no check necessary
 	// "close requested" event: we close the window
 	if (e.type == sf::Event::Closed)
 	{
-		m_GameWindow.close();
+		m_GameWindow->close();
 	}
 
 }
 
-GameState::GameState() : GameState(sf::VideoMode(800, 600))
+GameState::GameState(bool useWindow)
 {
-	
+	if (useWindow)
+	{
+		m_GameWindow = new sf::RenderWindow(sf::VideoMode(800, 600), "r/Place");
+	}
+	else
+	{
+		m_GameWindow = nullptr;
+	}
+	init();
 }
 
-GameState::GameState(sf::VideoMode videoMode) : m_GameWindow(videoMode, "r/Place")
+GameState::GameState(sf::VideoMode videoMode)
 {
+	m_GameWindow = new sf::RenderWindow(videoMode, "r/Place");
+	
 	init();
 }
 
@@ -141,22 +162,33 @@ void GameState::init()
 		{
 			m_EntityLayers[layer] = std::vector<jr::Entity*>(LAYER_SIZES[layer], nullptr);
 		}
-		
 
-		//Setup Game
-		m_BackgroundTexture.create(GRID_SIZE, GRID_SIZE);
-		sf::Image bImage = m_BackgroundTexture.copyToImage();
-		for (unsigned short xPos = 0; xPos < GRID_SIZE; ++xPos)
+		int envCounter = 0; //idc about indexes here, just increment when a non-wall added
+		int wallCounter = 0; //idc about indexes here, just increment when a non-wall added
+		for (unsigned char x = 0; x < MAP_WIDTH; ++x)
 		{
-			for (unsigned short yPos = 0; yPos < GRID_SIZE; ++yPos)
+			for (unsigned char y = 0; y < MAP_HEIGHT; ++y)
 			{
-				bImage.setPixel(xPos, yPos, sf::Color::White);
+				if (levelTilemap[x][y] == 1)
+				{
+					m_EntityLayers[(int)Layers::WALLS].push_back(new jr::TileEntity(levelTilemap[x][y], sf::Vector2i(x, y)));
+					++wallCounter;
+				}
+				else
+				{
+					m_EntityLayers[(int)Layers::ENVIORMENT].push_back(new jr::TileEntity(levelTilemap[x][y], sf::Vector2i(x, y)));
+					++envCounter;
+				}
 			}
 		}
 
-		m_BackgroundTexture.loadFromImage(bImage);
-		m_BackgroundSprite.setScale(sf::Vector2f(16.0f, 16.0f));
-		m_BackgroundSprite.setTexture(m_BackgroundTexture);
+
+		//Setup Game
+		//m_BackgroundMap.load("resources/textures/kenny/topdown-shooter/Tilesheet/tilesheet_complete.png", sf::Vector2u(64, 64), levelData, MAP_WIDTH, MAP_HEIGHT);
+
+		//m_BackgroundTexture.loadFromImage(bImage);
+		//m_BackgroundSprite.setScale(sf::Vector2f(16.0f, 16.0f));
+		//m_BackgroundSprite.setTexture(m_BackgroundTexture);
 	}
 }
 
@@ -180,6 +212,7 @@ void GameState::cleanup()
 
 		m_Peer->Shutdown(0);
 		RakNet::RakPeerInterface::DestroyInstance(m_Peer);
+		delete m_GameWindow;
 
 		jr::ResourceManager::cleanupSingleton();
 	}

@@ -3,10 +3,8 @@
 #include "gpro-net/projectile.h"
 #include <iostream>
 
-ServerGameState::ServerGameState() : GameState()
+ServerGameState::ServerGameState() : GameState(true)
 {
-	m_GameWindow.setTitle("r/Place Server");
-
 	
 }
 
@@ -45,9 +43,15 @@ void ServerGameState::update()
 			jr::Entity* e = m_EntityLayers[msg->m_NetID.layer][msg->m_NetID.id];
 			if (e->m_OwnerAddress == msg->m_Sender)
 			{
-				e->m_Position.x = msg->newPos[0];
-				e->m_Position.y = msg->newPos[1];
-				e->m_Rotation = msg->newRot;
+				e->m_NewPosition.x = msg->newPos[0];
+				e->m_NewPosition.y = msg->newPos[1];
+				e->m_NewRotation = msg->newRot;
+				if (msg->hard)
+				{
+					e->m_Position.x = msg->newPos[0];
+					e->m_Position.y = msg->newPos[1];
+					e->m_Rotation = msg->newRot;
+				}
 
 				m_RemoteOutputEventCache.push_back(msg);
 				continue; //DO NOT DELETE ME
@@ -77,7 +81,6 @@ void ServerGameState::update()
 	}
 	m_RemoteInputEventCache.clear();
 
-
 	GameState::update();
 }
 
@@ -105,8 +108,8 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 	player->m_NetID.id = objectID;
 	player->m_NetID.layer = (unsigned char)Layers::PLAYER;
 	player->m_OwnerAddress = conn;
-	player->m_Position.x = 100;
-	player->m_Position.y = 100;
+	player->m_Position.x = 200;
+	player->m_Position.y = 200;
 	player->m_Rotation = 0.0f;
 
 	m_EntityLayers[(int)Layers::PLAYER][objectID] = player; //we store in both because update uses m_NetworkObject, but finding players is easier in a map :)
@@ -123,14 +126,16 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 	authMsg->m_NetID.id = objectID; //gotten above
 	authMsg->m_NetID.layer = (unsigned char)Layers::PLAYER; //gotten above
 	authMsg->newAddress = player->m_OwnerAddress;
-	
-	//and finally send update information
+
 	NetworkObjectUpdateMessage* updateMsg = new NetworkObjectUpdateMessage();
 	updateMsg->m_NetID.id = objectID;
 	updateMsg->m_NetID.layer = (unsigned char)Layers::PLAYER;
-	updateMsg->newPos[0] = player->m_Position.x; //xpos
-	updateMsg->newPos[1] = player->m_Position.y; //ypos
-	updateMsg->newRot = player->m_Rotation; //rot
+	updateMsg->newPos[0] = player->m_Position.x;
+	updateMsg->newPos[1] = player->m_Position.y;
+	updateMsg->newRot = player->m_Rotation;
+	updateMsg->newVelocity[0] = player->m_Velocity.x;
+	updateMsg->newVelocity[0] = player->m_Velocity.y;
+	updateMsg->hard = true;
 	
 
 	//Add msgs to queue
@@ -176,6 +181,7 @@ void ServerGameState::createBulletRequested(NetworkObjectRequestCreateMessage* m
 	projectile->m_Rotation = msg->objectRot;
 
 	m_EntityLayers[projectile->m_NetID.layer][projectile->m_NetID.id] = projectile;
+	
 
 
 	//now send spawn message
@@ -198,6 +204,7 @@ void ServerGameState::createBulletRequested(NetworkObjectRequestCreateMessage* m
 	updateMsg->newRot = projectile->m_Rotation; //rot
 	updateMsg->m_NetID.id = objectID;
 	updateMsg->m_NetID.layer = (unsigned char)Layers::PROJECTILE;
+	updateMsg->hard = true;
 
 	//Add msgs to queue
 	m_RemoteOutputEventCache.push_back(createMsg);

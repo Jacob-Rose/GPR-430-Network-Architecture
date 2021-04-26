@@ -38,6 +38,8 @@ int main(void)
 	const unsigned short SERVER_PORT = 7777;
 	const char* SERVER_IP = "localhost"; //update every time
 
+	//todo get ip from command prompt
+
 	jr::ClientGameState* gs = new jr::ClientGameState();
 	
 	gs->init();

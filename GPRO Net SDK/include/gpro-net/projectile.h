@@ -3,6 +3,8 @@
 
 #include "entity.h"
 
+#include "shared-net.h"
+
 namespace jr
 {
 	class Projectile;
@@ -14,8 +16,8 @@ public:
 	Projectile();
 	~Projectile();
 
-	const float PROJECTILE_SPEED = 90.0f;
-	const float PROJECTILE_LIFESPAN = 10.0f;
+	const float PROJECTILE_SPEED = 250.0f;
+	const float PROJECTILE_LIFESPAN = 3.0f;
 
 	float m_TimeAlive = 0.0f;
 

@@ -5,6 +5,8 @@
 //SFML
 #include <SFML/Graphics.hpp>
 
+#include <gpro-net/tilemap.hpp>
+
 //Standard Library
 #include <vector>
 
@@ -29,27 +31,49 @@ namespace jr
 
 class jr::GameState
 {
-protected:
+public:
 
 	const static short GRID_SIZE = 128;
 
-	enum class Layers
+	enum class Layers //i love this, so useful
 	{
-		WORLD_BASE = 0,
-		ENVIORMENT, //obstacles
+		ENVIORMENT = 0, //World Tiles
+		WALLS,
 		PLAYER,
 		ENEMY,
 		PROJECTILE,
 		LAYERCOUNT
 	};
+	const static int MAP_WIDTH = 12;
+	const static int MAP_HEIGHT = 12;
+
 
 	const unsigned short LAYER_SIZES[(int)Layers::LAYERCOUNT] = { 
-		1 /*The main world*/, 
-		64 /*64 obstacles*/, 
+		0, //enviorment is not preallocated (could be, but im lazy)
+		0, //wall is not preallocated (could be, but im lazy)
 		8 /*8 players*/, 
 		24 /*24 Enemies*/, 
 		127 /*127 projectiles*/ 
 	};
+
+
+
+	const char levelTilemap[MAP_WIDTH][MAP_HEIGHT] = 
+	{
+		1,1,1,1,1,1,1,1,1,1,1,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,0,0,0,0,0,0,0,0,0,0,1,
+		1,1,1,1,1,1,1,1,1,1,1,1,
+	};
+
 
 
 	//||||||||||||| NETWORKING ||||||||||||
@@ -58,20 +82,23 @@ protected:
 	std::vector<NetworkMessage*> m_RemoteOutputEventCache; //filled in update
 
 	//||||||||||||| SFML |||||||||||||||||||
-	sf::RenderWindow m_GameWindow;
-
-	sf::Texture m_BackgroundTexture; //synced on network, thus doesnt use resource manager
-	sf::Sprite m_BackgroundSprite;
+	sf::RenderWindow* m_GameWindow;
+	sf::TileMap m_BackgroundMap;
 
 	sf::Clock frameClock; //to get dt
 
 	//State Information
 	bool m_IsInit = false;
+
+	bool m_GameActive = true;
 	
 
 	virtual void handleRemoteInput(); //decypher packets and store in m_InputEventCache
 
 	virtual void update();
+
+
+
 	virtual void handleSFMLEvent(sf::Event e);
 
 	virtual void handleRemoteOutput() = 0; //send out all packets needed in the m_OutputEventCache
@@ -79,7 +106,7 @@ protected:
 	std::vector<jr::Entity*> m_EntityLayers[(int)Layers::LAYERCOUNT]; //layers so objects have draw order + for collisions
 public:
 
-	GameState();
+	GameState(bool useWindow = true);
 	GameState(sf::VideoMode videoMode);
 
 	~GameState();

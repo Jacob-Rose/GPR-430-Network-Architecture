@@ -6,6 +6,10 @@ const std::string jr::ResourceManager::PLAYER_TEXTURE_ID = "player_texture";
 const std::string jr::ResourceManager::PROJECTILE_TEXTURE_ID = "projectile_texture";
 const std::string jr::ResourceManager::ENEMY_TEXTURE_ID = "enemy_texture";
 const std::string jr::ResourceManager::PLAYER_ARM_TEXTURE_ID = "player_arm_texture";
+const std::string jr::ResourceManager::TILE_GRASS_ID = "tile_grass_id";
+const std::string jr::ResourceManager::TILE_DIRT_ID = "tile_dirt_id";
+const std::string jr::ResourceManager::TILE_WALL_ID = "tile_wall_id";
+const std::string jr::ResourceManager::TILE_COLORWALL_ID = "tile_colorwall_id";
 
 jr::ResourceManager::ResourceManager()
 {
@@ -23,11 +27,11 @@ void jr::ResourceManager::init()
 	{
 		//Player
 		m_TextureCache[PLAYER_TEXTURE_ID] = new sf::Texture();
-		m_TextureCache[PLAYER_TEXTURE_ID]->loadFromFile("resources/textures/meepop.png");
+		m_TextureCache[PLAYER_TEXTURE_ID]->loadFromFile("resources/textures/kenny/topdown-shooter/PNG/Soldier 1/soldier1_machine.png");
 
 		//Player Arm
 		m_TextureCache[PLAYER_ARM_TEXTURE_ID] = new sf::Texture();
-		m_TextureCache[PLAYER_ARM_TEXTURE_ID]->loadFromFile("resources/textures/meepop leg.png");
+		m_TextureCache[PLAYER_ARM_TEXTURE_ID]->loadFromFile("resources/textures/kenny/topdown-shooter/PNG/weapon_gun.png");
 
 		//Projectile
 		m_TextureCache[PROJECTILE_TEXTURE_ID] = new sf::Texture();
@@ -35,7 +39,21 @@ void jr::ResourceManager::init()
 
 		//Enemy
 		m_TextureCache[ENEMY_TEXTURE_ID] = new sf::Texture();
-		m_TextureCache[ENEMY_TEXTURE_ID]->loadFromFile("resources/textures/meepop.png");
+		m_TextureCache[ENEMY_TEXTURE_ID]->loadFromFile("resources/textures/kenny/topdown-shooter/PNG/Zombie 1/zoimbie1_hold.png");
+
+		
+		//Because tilemaps require more work and I want to focus on networking
+		m_TextureCache[TILE_GRASS_ID] = new sf::Texture();
+		m_TextureCache[TILE_GRASS_ID]->loadFromFile("resources/textures/kenny/topdown-shooter/PNG/Tiles/tile_01.png");
+
+		m_TextureCache[TILE_DIRT_ID] = new sf::Texture();
+		m_TextureCache[TILE_DIRT_ID]->loadFromFile("resources/textures/kenny/topdown-shooter/PNG/Tiles/tile_05.png");
+
+		m_TextureCache[TILE_WALL_ID] = new sf::Texture();
+		m_TextureCache[TILE_WALL_ID]->loadFromFile("resources/textures/kenny/topdown-shooter/PNG/Tiles/tile_100.png");
+
+		m_TextureCache[TILE_COLORWALL_ID] = new sf::Texture();
+		m_TextureCache[TILE_COLORWALL_ID]->loadFromFile("resources/textures/kenny/topdown-shooter/PNG/Tiles/tile_11.png");
 
 		m_IsInit = true;
 	}

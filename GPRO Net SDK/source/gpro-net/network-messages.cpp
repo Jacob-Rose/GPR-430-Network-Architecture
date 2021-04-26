@@ -48,7 +48,9 @@ NetworkMessage* NetworkMessage::DecypherMessage(RakNet::BitStream* bs, RakNet::R
 	case (RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_OBJECT_CREATE_REQUEST_MESSAGE:
 		msg = new NetworkObjectRequestCreateMessage();
 		break;
-
+	case (RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_PROJECTILE_HIT_MESSAGE:
+		msg = new NetworkProjectileHitMessage();
+		break;
 	}
 	msg->m_Sender = sender;
 	msg->ReadPacketBitstream(bs);

@@ -14,7 +14,7 @@ void jr::ClientGameState::init()
 	{
 		GameState::init();
 		m_IsInit = true;
-		m_PlayerView.setSize(sf::Vector2f(m_GameWindow.getSize()));
+		m_PlayerView.setSize(sf::Vector2f(m_GameWindow->getSize()));
 	}
 }
 
@@ -74,9 +74,15 @@ void ClientGameState::update()
 		{
 			//todo update and pass on
 			jr::Entity* e = m_EntityLayers[msg->m_NetID.layer][msg->m_NetID.id];
-			e->m_Position.x = msg->newPos[0];
-			e->m_Position.y = msg->newPos[1];
-			e->m_Rotation = msg->newRot;
+			e->m_NewPosition.x = msg->newPos[0];
+			e->m_NewPosition.y = msg->newPos[1];
+			e->m_NewRotation = msg->newRot;
+			if (msg->hard)
+			{
+				e->m_Position.x = msg->newPos[0];
+				e->m_Position.y = msg->newPos[1];
+				e->m_Rotation = msg->newRot;
+			}
 		}
 		else if (NetworkObjectCreateMessage* msg = dynamic_cast<NetworkObjectCreateMessage*>(m_RemoteInputEventCache[i]))
 		{
@@ -132,7 +138,7 @@ void ClientGameState::update()
 		sf::Vector2f newPos = m_PlayerView.getCenter() * 0.6f + m_LocalPlayer->m_Position * 0.4f;
 		m_PlayerView.setCenter(newPos);
 	}
-	m_GameWindow.setView(m_PlayerView);
+	m_GameWindow->setView(m_PlayerView);
 
 
 	

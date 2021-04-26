@@ -31,8 +31,13 @@ public:
 	RakNet::RakNetGUID m_OwnerAddress;
 
 	sf::Vector2f m_Position;
+	sf::Vector2f m_NewPosition; //for dead reckoning
+
 	sf::Vector2f m_Velocity; //useful for network prediction
+	sf::Vector2f m_NewVelocity; //for dead reckoning
+	
 	float m_Rotation;
+	float m_NewRotation; //for dead reckoning
 
 	sf::Sprite m_Sprite;
 

@@ -186,6 +186,8 @@
     <ClInclude Include="..\..\..\include\gpro-net\projectile.h" />
     <ClInclude Include="..\..\..\include\gpro-net\resource-manager.h" />
     <ClInclude Include="..\..\..\include\gpro-net\shared-net.h" />
+    <ClInclude Include="..\..\..\include\gpro-net\tile.hpp" />
+    <ClInclude Include="..\..\..\include\gpro-net\tilemap.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\include\gpro-net\gpro-net-console_win.c" />

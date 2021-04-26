@@ -18,15 +18,20 @@ public:
 	Player();
 	~Player();
 
-	const float PLAYER_SPEED = 25.0f;
-	const float SHOT_REFRESH_TIME = 1.0f;
+	const float PLAYER_SPEED = 100.0f;
+	const float PLAYER_ACCEL = 250.0f;
+	const float PLAYER_DECCEL = 300.0f;
+	const float SHOT_REFRESH_TIME = 0.2f;
+	const float PLAYER_SCALE = 0.75f;
 
 	float m_TimeSinceShot = 0.0f;
-
-	sf::Sprite m_ArmSprite;
 	
 
 	virtual void update(EntityUpdateInfo updateInfo) override;
+
+	//https://en.sfml-dev.org/forums/index.php?topic=23624.0
+	static bool segmentIntersectsRectangle(const sf::FloatRect& rect,
+		const sf::Vector2f& a_p1, const sf::Vector2f& a_p2);
 
 	//virtual void Serialize(RakNet::BitStream* writeStream) override;
 	//virtual void Deserialize(RakNet::BitStream* readStream) override;

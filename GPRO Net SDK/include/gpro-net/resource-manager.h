@@ -36,6 +36,10 @@ public:
 	static const std::string PLAYER_TEXTURE_ID;
 	static const std::string PLAYER_ARM_TEXTURE_ID;
 	static const std::string ENEMY_TEXTURE_ID;
+	static const std::string TILE_GRASS_ID;
+	static const std::string TILE_DIRT_ID;
+	static const std::string TILE_WALL_ID;
+	static const std::string TILE_COLORWALL_ID;
 
 	static void initSingleton();
 	static void cleanupSingleton();

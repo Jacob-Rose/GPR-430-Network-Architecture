@@ -4,17 +4,23 @@
 #include <SFML/System/Time.hpp>
 #include <SFML/Graphics.hpp>
 
-struct GameUpdateInfo
+namespace jr
 {
-public:
-	sf::Time dt;
-};
+	class GameState;
 
-struct EntityUpdateInfo : public GameUpdateInfo
-{
-public:
-	bool isOwner;
-	sf::RenderWindow* window;
-};
+	struct GameUpdateInfo
+	{
+	public:
+		sf::Time dt;
+		jr::GameState* gameState;
+	};
+
+	struct EntityUpdateInfo : public GameUpdateInfo
+	{
+	public:
+		bool isOwner;
+	};
+
+}
 
 #endif
