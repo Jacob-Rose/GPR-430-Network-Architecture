@@ -23,8 +23,8 @@ public:
 
 
 	void update() override;
-
 	void handleRemoteOutput() override;
+	void handleRemoteInput() override;
 
 	void createPlayerForConn(RakNet::RakNetGUID conn);
 	void deletePlayerForConn(RakNet::RakNetGUID conn);

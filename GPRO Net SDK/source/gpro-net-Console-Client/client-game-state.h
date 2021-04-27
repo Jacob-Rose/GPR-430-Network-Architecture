@@ -26,6 +26,7 @@ public:
 	void handleSFMLEvent(sf::Event e) override;
 	
 	void handleRemoteOutput() override;
+	void handleRemoteInput() override;
 
 	sf::View m_PlayerView;
 

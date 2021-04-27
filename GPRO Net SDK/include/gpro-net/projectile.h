@@ -17,7 +17,8 @@ public:
 	~Projectile();
 
 	const float PROJECTILE_SPEED = 250.0f;
-	const float PROJECTILE_LIFESPAN = 3.0f;
+	const float PROJECTILE_LIFESPAN = 1.0f;
+	const float PROJECTILE_DAMAGE = 25.0f;
 
 	float m_TimeAlive = 0.0f;
 

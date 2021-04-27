@@ -147,7 +147,9 @@ void jr::Player::update(EntityUpdateInfo updateInfo)
 	m_Velocity = m_NewVelocity;
 	m_Rotation = m_NewRotation; //no dead reckoning here
 
+	char m_HealthPercent = (int)((m_Health / PLAYER_MAX_HEALTH)*255);
 
+	m_Sprite.setColor(sf::Color(255, m_HealthPercent, m_HealthPercent));
 
 
 	//Now Everyone does this
@@ -159,17 +161,21 @@ void jr::Player::update(EntityUpdateInfo updateInfo)
 	//this feels very coupled, but by the way I want to handle projectile collision, this is actually the best way to do this I believe
 	for (int i = 0; i < updateInfo.gameState->m_EntityLayers[(int)GameState::Layers::PROJECTILE].size(); ++i) 
 	{
+
 		jr::Projectile* proj = static_cast<jr::Projectile*>(updateInfo.gameState->m_EntityLayers[(int)GameState::Layers::PROJECTILE][i]);
-		if (proj == nullptr)
+		if (proj == nullptr || proj->m_OwnerAddress == m_OwnerAddress) //dont destroy if hit self
 		{
 			continue;
 		}
-		if (m_Sprite.getGlobalBounds().intersects(proj->m_Sprite.getGlobalBounds()))
+		if (PROJECTILE_IGNORE_COLLISION_TIME < proj->m_TimeAlive)
 		{
-			NetworkProjectileHitMessage* hitMsg = new NetworkProjectileHitMessage();
-			hitMsg->m_ProjectileNetID = updateInfo.gameState->m_EntityLayers[(int)GameState::Layers::PROJECTILE][i]->m_NetID;
-			hitMsg->m_HitObjectNetID = m_NetID;
-			m_RemoteOutputCache.push_back(hitMsg);
+			if (m_Sprite.getGlobalBounds().intersects(proj->m_Sprite.getGlobalBounds()))
+			{
+				NetworkProjectileHitMessage* hitMsg = new NetworkProjectileHitMessage();
+				hitMsg->m_ProjectileNetID = updateInfo.gameState->m_EntityLayers[(int)GameState::Layers::PROJECTILE][i]->m_NetID;
+				hitMsg->m_HitObjectNetID = m_NetID;
+				m_RemoteOutputCache.push_back(hitMsg);
+			}
 		}
 	}
 }

@@ -75,6 +75,8 @@ public:
 	};
 
 
+	const sf::Vector2i playerSpawnPoints[2]{ sf::Vector2i(3, 3), sf::Vector2i(9,9) };
+	const sf::Vector2i enemySpawnPoints[2]{ sf::Vector2i(3, 9), sf::Vector2i(9,3) };
 
 	//||||||||||||| NETWORKING ||||||||||||
 	RakNet::RakPeerInterface* m_Peer;
@@ -89,21 +91,22 @@ public:
 
 	//State Information
 	bool m_IsInit = false;
-
 	bool m_GameActive = true;
-	
 
 	virtual void handleRemoteInput(); //decypher packets and store in m_InputEventCache
 
 	virtual void update();
 
-
+	sf::Vector2f getSizeOfWorldTile();
 
 	virtual void handleSFMLEvent(sf::Event e);
 
-	virtual void handleRemoteOutput() = 0; //send out all packets needed in the m_OutputEventCache
+	jr::Player* getPlayerForAddress(RakNet::RakNetGUID playerID);
+
+	virtual void handleRemoteOutput(); //send out all packets needed in the m_OutputEventCache
 
 	std::vector<jr::Entity*> m_EntityLayers[(int)Layers::LAYERCOUNT]; //layers so objects have draw order + for collisions
+
 public:
 
 	GameState(bool useWindow = true);
@@ -114,7 +117,6 @@ public:
 	//Note: Does not set m_IsInit as the extended parent will most likely be doing this
 	virtual void init();
 	virtual void cleanup();
-
 
 	void runGameLoop();
 

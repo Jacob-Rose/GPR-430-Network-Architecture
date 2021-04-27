@@ -36,6 +36,50 @@ void GameState::runGameLoop()
 
 }
 
+void jr::GameState::handleRemoteOutput()
+{
+	for (int i = 0; i < m_RemoteOutputEventCache.size(); ++i)
+	{
+		RakNet::BitStream bs;
+		m_RemoteOutputEventCache[i]->WritePacketBitstream(&bs);
+		if (m_RemoteOutputEventCache[i]->m_Target == RakNet::UNASSIGNED_RAKNET_GUID)
+		{
+			if (m_RemoteOutputEventCache[i]->m_Sender == m_Peer->GetMyGUID())
+			{
+				m_Peer->Send(&bs, m_RemoteOutputEventCache[i]->m_Priority, m_RemoteOutputEventCache[i]->m_Reliablity, 0, RakNet::UNASSIGNED_RAKNET_GUID, true); //this needs to have more control per message. but ill do this later
+			}
+			else
+			{
+				m_Peer->Send(&bs, m_RemoteOutputEventCache[i]->m_Priority, m_RemoteOutputEventCache[i]->m_Reliablity, 0, m_RemoteOutputEventCache[i]->m_Sender, true); //this needs to have more control per message. but ill do this later
+			}
+			
+		}
+		else
+		{
+			m_Peer->Send(&bs, m_RemoteOutputEventCache[i]->m_Priority, m_RemoteOutputEventCache[i]->m_Reliablity, 0, m_RemoteOutputEventCache[i]->m_Target, false);
+		}
+		delete m_RemoteOutputEventCache[i];
+	}
+	m_RemoteOutputEventCache.clear();
+}
+
+jr::Player* jr::GameState::getPlayerForAddress(RakNet::RakNetGUID playerID)
+{
+	for (int i = 0; i < m_EntityLayers[(int)Layers::PLAYER].size(); ++i)
+	{
+		if (m_EntityLayers[(int)Layers::PLAYER][i]->m_OwnerAddress == playerID)
+		{
+			return static_cast<jr::Player*>(m_EntityLayers[(int)Layers::PLAYER][i]);
+		}
+	}
+	return nullptr;
+}
+
+sf::Vector2f jr::GameState::getSizeOfWorldTile()
+{
+	return sf::Vector2f(m_EntityLayers[(int)Layers::ENVIORMENT][0]->m_Sprite.getGlobalBounds().width, m_EntityLayers[(int)Layers::ENVIORMENT][0]->m_Sprite.getGlobalBounds().height);
+}
+
 void GameState::update()
 {
 	sf::Time dt = frameClock.restart();
@@ -55,7 +99,9 @@ void GameState::update()
 		m_GameWindow->draw(m_BackgroundMap);
 	}
 	
-
+	EntityUpdateInfo eui; //used for all useful since a struct
+	eui.dt = dt;
+	eui.gameState = this;
 	//Update Entities
 	for (int layer = 0; layer < (int)Layers::LAYERCOUNT; ++layer)
 	{
@@ -66,10 +112,7 @@ void GameState::update()
 
 
 			RakNet::RakNetGUID myID = m_Peer->GetMyGUID();
-			EntityUpdateInfo eui;
-			eui.isOwner = myID.systemIndex == e->m_OwnerAddress.systemIndex;
-			eui.dt = dt;
-			eui.gameState = this;
+			eui.isOwner = myID == e->m_OwnerAddress;
 			e->update(eui);
 
 			//Each object can have its own outputs ready to be sent
@@ -87,7 +130,7 @@ void GameState::update()
 			
 
 
-			if (e->m_DeleteMe)
+			if (e->m_OwnerAddress == m_Peer->GetMyGUID() && e->m_DeleteMe)
 			{
 				delete e;
 				m_EntityLayers[layer][index] = nullptr;

@@ -23,9 +23,13 @@ public:
 	const float PLAYER_DECCEL = 300.0f;
 	const float SHOT_REFRESH_TIME = 0.2f;
 	const float PLAYER_SCALE = 0.75f;
+	const float PLAYER_MAX_HEALTH = 100.0f;
+	const float PROJECTILE_IGNORE_COLLISION_TIME = 0.2f; //used to not hit the player or anything right as it spawns
 
 	float m_TimeSinceShot = 0.0f;
-	
+	float m_Health = PLAYER_MAX_HEALTH;
+
+	int m_KillCount = 0;
 
 	virtual void update(EntityUpdateInfo updateInfo) override;
 

@@ -33,6 +33,7 @@ enum class SharedNetworkMessageID
 	ID_NETWORK_OBJECT_HARD_UPDATE_MESSAGE,
 	ID_NETWORK_OBJECT_AUTHORITY_UPDATED_MESSAGE,
 	ID_NETWORK_PROJECTILE_HIT_MESSAGE,
+	ID_NETWORK_PLAYER_HEALTH_UPDATE_MESSAGE,
 	ID_PLAYER_PAINT_SHOT_MESSAGE
 };
 
@@ -59,7 +60,8 @@ protected:
 	const RakNet::MessageID m_MessageID;
 
 
-	NetworkMessage(RakNet::MessageID id, PacketReliability reliability, PacketPriority priority) : m_MessageID(id), m_Priority(priority), m_Reliablity(reliability) {} //abstract
+	NetworkMessage(RakNet::MessageID id, PacketReliability reliability, PacketPriority priority) : 
+		m_MessageID(id), m_Priority(priority), m_Reliablity(reliability), m_Target(RakNet::UNASSIGNED_RAKNET_GUID) {} //abstract
 
 	
 public:
@@ -67,6 +69,7 @@ public:
 	RakNet::RakNetGUID m_Sender;
 	PacketReliability m_Reliablity;
 	PacketPriority m_Priority;
+	RakNet::RakNetGUID m_Target;
 
 	RakNet::MessageID getMessageID() { return m_MessageID; }
 
@@ -164,6 +167,7 @@ public:
 	}
 };
 
+/*
 class PlayerShotPaintMessage : public NetworkMessage
 {
 public:
@@ -196,14 +200,15 @@ class PaintPixelMessage : public NetworkMessage
 
 
 };
+*/
 
 // |||||||||| NETWORK OBJECT MESSAGES |||||||||||||||||||
 
 class NetworkObjectMessage : public NetworkMessage
 {
 protected:
-	NetworkObjectMessage(SharedNetworkMessageID id, PacketReliability reliability) : 
-		NetworkMessage((RakNet::MessageID)id, reliability, PacketPriority::HIGH_PRIORITY) { } //abstract
+	NetworkObjectMessage(SharedNetworkMessageID id, PacketReliability reliability, PacketPriority priority = PacketPriority::MEDIUM_PRIORITY) : 
+		NetworkMessage((RakNet::MessageID)id, reliability, priority) { } //abstract
 public:
 	jr::NetID m_NetID; //directly correlates to object id
 
@@ -316,6 +321,59 @@ public:
 		bs->Read(newVelocity[1]);
 		bs->Read(newRot);
 		bs->Read(hard);
+		return true;
+	}
+};
+
+class NetworkPlayerKilledPlayerEventMessage : public NetworkMessage
+{
+public:
+	jr::NetID m_KillerID;
+	jr::NetID m_DeadDudesID;
+	int m_KillerNewScore;
+	NetworkPlayerKilledPlayerEventMessage() : NetworkMessage((RakNet::MessageID)SharedNetworkMessageID::ID_NETWORK_OBJECT_UPDATE_MESSAGE,
+		PacketReliability::RELIABLE, PacketPriority::HIGH_PRIORITY)
+	{}
+
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkMessage::WritePacketBitstream(bs);
+		bs->Write(m_KillerID.id);
+		bs->Write(m_KillerID.layer);
+		bs->Write(m_DeadDudesID.id);
+		bs->Write(m_DeadDudesID.layer);
+		bs->Write(m_KillerNewScore);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		bs->Read(m_KillerID.id);
+		bs->Read(m_KillerID.layer);
+		bs->Read(m_DeadDudesID.id);
+		bs->Read(m_DeadDudesID.layer);
+		bs->Read(m_KillerNewScore);
+		return true;
+	}
+};
+
+class NetworkPlayerHealthUpdateMessage : public NetworkObjectMessage
+{
+public:
+	float newHealth;
+	NetworkPlayerHealthUpdateMessage() : NetworkObjectMessage(SharedNetworkMessageID::ID_NETWORK_PLAYER_HEALTH_UPDATE_MESSAGE,
+		PacketReliability::RELIABLE), newHealth(0.0f)
+	{}
+
+	virtual bool WritePacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::WritePacketBitstream(bs);
+		bs->Write(newHealth);
+		return true;
+	}
+	virtual bool ReadPacketBitstream(RakNet::BitStream* bs) override
+	{
+		NetworkObjectMessage::ReadPacketBitstream(bs);
+		bs->Read(newHealth);
 		return true;
 	}
 };
