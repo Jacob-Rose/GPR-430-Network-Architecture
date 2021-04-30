@@ -26,29 +26,40 @@
 
 #include "client-game-state.h"
 
+
+#include <string>
+#include <iostream>
 #define GAME_CLIENT 1
 
 int main(void)
 {
-	//for us
-
-
-	//NetworkState ns[1] = { 0 };
-
+	const bool USE_LOCAL_NO_INPUT = true;
 	const unsigned short SERVER_PORT = 7777;
 	const char* SERVER_IP = "localhost"; //update every time
 
-	//todo get ip from command prompt
-
 	jr::ClientGameState* gs = new jr::ClientGameState();
+
+
+	std::string ip;
+
+	if (USE_LOCAL_NO_INPUT)
+	{
+		ip = SERVER_IP;
+	}
+	else
+	{
+		std::cout << "Enter server IP: ";
+		std::cin >> ip;
+	}
 	
 	gs->init();
-	gs->connect(SERVER_IP, SERVER_PORT);
+	gs->connect(ip.c_str(), SERVER_PORT);
 
 	gs->runGameLoop();
 
+
+
+
 	delete gs;
-
-
 	return 0;
 }

@@ -13,7 +13,11 @@ namespace jr
 
 class jr::ClientGameState : public jr::GameState
 {
-protected:
+
+private:
+	sf::View m_PlayerView;
+	jr::Player* m_LocalPlayer = nullptr;
+	RakNet::RakNetGUID m_ServerGUID;
 
 public:
 	ClientGameState();
@@ -28,17 +32,8 @@ public:
 	void handleRemoteOutput() override;
 	void handleRemoteInput() override;
 
-	sf::View m_PlayerView;
 
-	jr::Player* m_LocalPlayer = nullptr;
 
-	RakNet::RakNetGUID m_ServerGUID;
-	///
-	/// Used only when a message from the server is received
-	/// NOTE: cannot create objects on the server
-	/// 
-	/// Returns -1 if error, 1 if success
-	///
 };
 
 #endif

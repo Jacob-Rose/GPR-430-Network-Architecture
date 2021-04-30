@@ -46,11 +46,11 @@ public:
 
 
 	std::vector<NetworkMessage*> m_RemoteOutputCache = std::vector<NetworkMessage*>();
-
+	bool m_DeleteMe = false; //indicates ready to be deleted
 
 	friend class GameState;
 protected:
-	bool m_DeleteMe = false; //indicates ready to be deleted
+
 
 
 };

@@ -85,36 +85,26 @@ void ServerGameState::handleRemoteInput()
 		}
 		else if (NetworkProjectileHitMessage* msg = dynamic_cast<NetworkProjectileHitMessage*>(m_RemoteInputEventCache[i]))
 		{
-			jr::Entity* proj = m_EntityLayers[(int)Layers::PROJECTILE][msg->m_ProjectileNetID.id]; //always projectile
+			jr::Projectile* proj = static_cast<jr::Projectile*>(m_EntityLayers[(int)Layers::PROJECTILE][msg->m_ProjectileNetID.id]); //always projectile
+			jr::Player* daKilla = getPlayerForAddress(proj->m_OwnerAddress);
 
-			NetworkObjectDestroyMessage* destroyMsg = new NetworkObjectDestroyMessage();
-			destroyMsg->m_NetID = proj->m_NetID;
-			if (proj->m_OwnerAddress == msg->m_Sender)
+
+			if (proj->m_OwnerAddress == msg->m_Sender) //projectile has authority here
 			{
-				m_FreeNetworkIndexes[proj->m_NetID.layer].push_back(proj->m_NetID.id);
-
-				m_EntityLayers[(int)Layers::PROJECTILE][msg->m_ProjectileNetID.id] = nullptr;
-				m_RemoteOutputEventCache.push_back(msg);
-
 				jr::Entity* hitObj = m_EntityLayers[msg->m_HitObjectNetID.layer][msg->m_HitObjectNetID.id];
 				if (jr::Player* hitPlayer = dynamic_cast<jr::Player*>(hitObj))
 				{
-					hitPlayer->m_Health -= static_cast<jr::Projectile*>(proj)->PROJECTILE_DAMAGE;
+					hitPlayer->m_Health -= proj->PROJECTILE_DAMAGE;
 
 					if (hitPlayer->m_Health <= 0)
 					{
-						//TODO Kill player and respawn, increment score for killer
-
-
-						//get owner of bullet
-						jr::Player* daKilla = getPlayerForAddress(proj->m_OwnerAddress);
-
 						daKilla->m_KillCount++;
 
 						NetworkPlayerKilledPlayerEventMessage* killPlayerMsg = new NetworkPlayerKilledPlayerEventMessage();
 						killPlayerMsg->m_DeadDudesID = hitPlayer->m_NetID;
-						killPlayerMsg->m_KillerNewScore = daKilla->m_KillCount;
+						killPlayerMsg->m_KillerNewScore = ++daKilla->m_KillCount;
 						killPlayerMsg->m_KillerID = daKilla->m_NetID;
+						killPlayerMsg->m_Sender = m_Peer->GetMyGUID();
 
 						//Set new position
 						sf::Vector2i m_SpawnpointIndex = playerSpawnPoints[std::rand() % 2];
@@ -122,6 +112,7 @@ void ServerGameState::handleRemoteInput()
 						sf::Vector2f m_SpawnpointPos = sf::Vector2f(m_SpawnpointIndex.x * m_WorldTileSize.x, m_SpawnpointIndex.y * m_WorldTileSize.y);
 						hitPlayer->m_Position = m_SpawnpointPos;
 						hitPlayer->m_NewPosition = m_SpawnpointPos;
+						
 
 						//Send new spawn position for player
 						NetworkObjectUpdateMessage* teleportPlayerMsg = new NetworkObjectUpdateMessage();
@@ -132,20 +123,24 @@ void ServerGameState::handleRemoteInput()
 						teleportPlayerMsg->newVelocity[0] = 0.0f;
 						teleportPlayerMsg->newVelocity[1] = 0.0f;
 						teleportPlayerMsg->hard = true;
+						teleportPlayerMsg->m_Sender = m_Peer->GetMyGUID();
 
-						m_RemoteOutputEventCache.push_back(killPlayerMsg);
+						hitPlayer->resetHealth(); //this is also called on clients
+
 						m_RemoteOutputEventCache.push_back(teleportPlayerMsg);
+						m_RemoteOutputEventCache.push_back(killPlayerMsg);
 					}
 					else
 					{
 						NetworkPlayerHealthUpdateMessage* healthUpdateMsg = new NetworkPlayerHealthUpdateMessage();
 						healthUpdateMsg->m_NetID = hitPlayer->m_NetID;
+						hitPlayer->m_Health -= proj->PROJECTILE_DAMAGE;
 						healthUpdateMsg->newHealth = hitPlayer->m_Health;
+						healthUpdateMsg->m_Sender = msg->m_Sender;
+
 						m_RemoteOutputEventCache.push_back(healthUpdateMsg);
 					}
 				}
-
-				delete proj;
 			}
 		}
 		else if (NetworkObjectRequestCreateMessage* msg = dynamic_cast<NetworkObjectRequestCreateMessage*>(m_RemoteInputEventCache[i]))
@@ -164,7 +159,8 @@ void ServerGameState::handleRemoteInput()
 void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 {
 	//First, we need to send each players info to the player that just joined
-	for (std::map<RakNet::RakNetGUID, jr::Player*>::iterator it = m_Players.begin(); it != m_Players.begin(); ++it)
+	
+	for (std::map<RakNet::RakNetGUID, jr::Player*>::iterator it = m_Players.begin(); it != m_Players.end(); ++it)
 	{
 		NetworkObjectCreateMessage* createMsg = new NetworkObjectCreateMessage();
 		createMsg->m_NetID.layer = (unsigned char)Layers::PLAYER;
@@ -172,6 +168,7 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 		createMsg->objectType = NetworkObjectID::PLAYER_OBJECT_ID;
 		createMsg->m_Sender = m_Peer->GetMyGUID();
 		createMsg->m_Target = conn;
+		createMsg->m_Reliablity = PacketReliability::RELIABLE_ORDERED;
 
 		//now send authority message
 		NetworkObjectAuthorityChangeMessage* authMsg = new NetworkObjectAuthorityChangeMessage();
@@ -180,6 +177,7 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 		authMsg->newAddress = it->second->m_OwnerAddress;
 		authMsg->m_Sender = m_Peer->GetMyGUID();
 		authMsg->m_Target = conn;
+		authMsg->m_Reliablity = PacketReliability::RELIABLE_ORDERED;
 
 		NetworkObjectUpdateMessage* updateMsg = new NetworkObjectUpdateMessage();
 		updateMsg->m_NetID.id = it->second->m_NetID.id;;
@@ -192,12 +190,14 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 		updateMsg->hard = true;
 		updateMsg->m_Sender = m_Peer->GetMyGUID();
 		updateMsg->m_Target = conn;
+		updateMsg->m_Reliablity = PacketReliability::RELIABLE_ORDERED;
 
 		//Add msgs to queue
 		m_RemoteOutputEventCache.push_back(createMsg);
 		m_RemoteOutputEventCache.push_back(authMsg);
 		m_RemoteOutputEventCache.push_back(updateMsg);
 	}
+	
 
 
 	//now we create the player for everyone
@@ -222,7 +222,7 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 	createMsg->m_NetID.id = objectID;
 	createMsg->objectType = NetworkObjectID::PLAYER_OBJECT_ID;
 	createMsg->m_Sender = m_Peer->GetMyGUID();
-
+	createMsg->m_Reliablity = PacketReliability::RELIABLE_ORDERED;
 
 	//now send authority message
 	NetworkObjectAuthorityChangeMessage* authMsg = new NetworkObjectAuthorityChangeMessage();
@@ -230,6 +230,7 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 	authMsg->m_NetID.layer = (unsigned char)Layers::PLAYER; //gotten above
 	authMsg->newAddress = player->m_OwnerAddress;
 	authMsg->m_Sender = m_Peer->GetMyGUID();
+	authMsg->m_Reliablity = PacketReliability::RELIABLE_ORDERED;
 
 	NetworkObjectUpdateMessage* updateMsg = new NetworkObjectUpdateMessage();
 	updateMsg->m_NetID.id = objectID;
@@ -241,6 +242,7 @@ void ServerGameState::createPlayerForConn(RakNet::RakNetGUID conn)
 	updateMsg->newVelocity[0] = player->m_Velocity.y;
 	updateMsg->hard = true;
 	updateMsg->m_Sender = m_Peer->GetMyGUID();
+	updateMsg->m_Reliablity = PacketReliability::RELIABLE_ORDERED;
 
 	//Add msgs to queue
 	m_RemoteOutputEventCache.push_back(createMsg);

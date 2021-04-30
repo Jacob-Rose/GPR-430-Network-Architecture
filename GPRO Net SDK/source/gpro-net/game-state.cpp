@@ -112,7 +112,7 @@ void GameState::update()
 
 
 			RakNet::RakNetGUID myID = m_Peer->GetMyGUID();
-			eui.isOwner = myID == e->m_OwnerAddress;
+			eui.isOwner = myID == e->m_OwnerAddress || e->m_OwnerAddress == RakNet::UNASSIGNED_RAKNET_GUID;
 			e->update(eui);
 
 			//Each object can have its own outputs ready to be sent
@@ -132,12 +132,7 @@ void GameState::update()
 
 			if (e->m_OwnerAddress == m_Peer->GetMyGUID() && e->m_DeleteMe)
 			{
-				delete e;
-				m_EntityLayers[layer][index] = nullptr;
-				NetworkObjectDestroyMessage* msg = new NetworkObjectDestroyMessage();
-				msg->m_NetID.layer = layer;
-				msg->m_NetID.id = index;
-				m_RemoteOutputEventCache.push_back(msg);
+				deleteObject(e->m_NetID);
 			}
 		}
 	}
@@ -153,6 +148,18 @@ void GameState::update()
 
 	//send output network messages
 	handleRemoteOutput(); //could be on seperate thread?
+}
+
+void jr::GameState::deleteObject(jr::NetID id)
+{
+	jr::Entity* e = m_EntityLayers[id.layer][id.id];
+	delete e;
+	m_EntityLayers[id.layer][id.id] = nullptr;
+
+	NetworkObjectDestroyMessage* msg = new NetworkObjectDestroyMessage();
+	msg->m_NetID.layer = id.layer;
+	msg->m_NetID.id = id.id;
+	m_RemoteOutputEventCache.push_back(msg);
 }
 
 void jr::GameState::handleSFMLEvent(sf::Event e)
@@ -212,14 +219,16 @@ void GameState::init()
 		{
 			for (unsigned char y = 0; y < MAP_HEIGHT; ++y)
 			{
+				jr::TileEntity* tile = new jr::TileEntity(levelTilemap[x][y], sf::Vector2i(x, y));
+				tile->m_OwnerAddress = RakNet::UNASSIGNED_RAKNET_GUID;
 				if (levelTilemap[x][y] == 1)
 				{
-					m_EntityLayers[(int)Layers::WALLS].push_back(new jr::TileEntity(levelTilemap[x][y], sf::Vector2i(x, y)));
+					m_EntityLayers[(int)Layers::WALLS].push_back(tile);
 					++wallCounter;
 				}
 				else
 				{
-					m_EntityLayers[(int)Layers::ENVIORMENT].push_back(new jr::TileEntity(levelTilemap[x][y], sf::Vector2i(x, y)));
+					m_EntityLayers[(int)Layers::ENVIORMENT].push_back(tile);
 					++envCounter;
 				}
 			}

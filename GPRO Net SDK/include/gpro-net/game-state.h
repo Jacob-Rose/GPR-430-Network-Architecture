@@ -107,6 +107,8 @@ public:
 
 	std::vector<jr::Entity*> m_EntityLayers[(int)Layers::LAYERCOUNT]; //layers so objects have draw order + for collisions
 
+	void deleteObject(jr::NetID id);
+
 public:
 
 	GameState(bool useWindow = true);

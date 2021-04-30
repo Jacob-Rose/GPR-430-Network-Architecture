@@ -24,12 +24,16 @@ public:
 	const float SHOT_REFRESH_TIME = 0.2f;
 	const float PLAYER_SCALE = 0.75f;
 	const float PLAYER_MAX_HEALTH = 100.0f;
-	const float PROJECTILE_IGNORE_COLLISION_TIME = 0.2f; //used to not hit the player or anything right as it spawns
+
+	const float NETWORK_PACKET_TIME_INTERVAL = 0.033f; //time between sending updates
 
 	float m_TimeSinceShot = 0.0f;
+	float m_TimeSincePacketSent = 0.0f;
 	float m_Health = PLAYER_MAX_HEALTH;
 
 	int m_KillCount = 0;
+
+	void resetHealth() { m_Health = PLAYER_MAX_HEALTH; }
 
 	virtual void update(EntityUpdateInfo updateInfo) override;
 

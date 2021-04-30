@@ -119,15 +119,24 @@ void jr::ClientGameState::handleRemoteInput()
 		{
 			//todo update and pass on
 			jr::Entity* e = m_EntityLayers[msg->m_NetID.layer][msg->m_NetID.id];
-			e->m_NewPosition.x = msg->newPos[0];
-			e->m_NewPosition.y = msg->newPos[1];
-			e->m_NewRotation = msg->newRot;
-			if (msg->hard)
+
+			if (e == nullptr)
 			{
-				e->m_Position.x = msg->newPos[0];
-				e->m_Position.y = msg->newPos[1];
-				e->m_Rotation = msg->newRot;
+				printf("Oops, object not created yet. \n");
 			}
+			else
+			{
+				e->m_NewPosition.x = msg->newPos[0];
+				e->m_NewPosition.y = msg->newPos[1];
+				e->m_NewRotation = msg->newRot;
+				if (msg->hard)
+				{
+					e->m_Position.x = msg->newPos[0];
+					e->m_Position.y = msg->newPos[1];
+					e->m_Rotation = msg->newRot;
+				}
+			}
+			
 		}
 		else if (NetworkObjectCreateMessage* msg = dynamic_cast<NetworkObjectCreateMessage*>(m_RemoteInputEventCache[i]))
 		{
@@ -162,6 +171,7 @@ void jr::ClientGameState::handleRemoteInput()
 		else if (NetworkPlayerKilledPlayerEventMessage* msg = dynamic_cast<NetworkPlayerKilledPlayerEventMessage*>(m_RemoteInputEventCache[i]))
 		{
 			static_cast<jr::Player*>(m_EntityLayers[(int)Layers::PLAYER][msg->m_KillerID.id])->m_KillCount = msg->m_KillerNewScore;
+			static_cast<jr::Player*>(m_EntityLayers[(int)Layers::PLAYER][msg->m_DeadDudesID.id])->resetHealth();
 		}
 
 		else if (NetworkObjectAuthorityChangeMessage* msg = dynamic_cast<NetworkObjectAuthorityChangeMessage*>(m_RemoteInputEventCache[i]))

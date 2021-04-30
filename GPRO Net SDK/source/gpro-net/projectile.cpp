@@ -27,8 +27,39 @@ void jr::Projectile::update(EntityUpdateInfo updateInfo)
 
 	m_Sprite.setPosition(m_Position);
 	m_Sprite.setRotation(m_Rotation + 90.0f);
-	if (updateInfo.isOwner && m_TimeAlive > PROJECTILE_LIFESPAN)
+	if (updateInfo.isOwner)
 	{
-		m_DeleteMe = true;
+		if (m_TimeAlive > PROJECTILE_LIFESPAN)
+		{
+			m_DeleteMe = true;
+		}
+
+		for (int i = 0; i < updateInfo.gameState->m_EntityLayers[(int)GameState::Layers::PLAYER].size(); ++i)
+		{
+
+			jr::Player* player = static_cast<jr::Player*>(updateInfo.gameState->m_EntityLayers[(int)GameState::Layers::PLAYER][i]);
+			if (player == nullptr || player->m_OwnerAddress == m_OwnerAddress) //dont destroy if hit self
+			{
+				continue;
+			}
+
+			if (PROJECTILE_IGNORE_COLLISION_TIME < m_TimeAlive)
+			{
+				if (m_Sprite.getGlobalBounds().intersects(player->m_Sprite.getGlobalBounds()))
+				{
+					NetworkProjectileHitMessage* hitMsg = new NetworkProjectileHitMessage();
+					hitMsg->m_ProjectileNetID = m_NetID;
+					hitMsg->m_HitObjectNetID = updateInfo.gameState->m_EntityLayers[(int)GameState::Layers::PLAYER][i]->m_NetID;
+
+
+					player->m_Health -= PROJECTILE_DAMAGE;
+					m_RemoteOutputCache.push_back(hitMsg);
+
+					m_DeleteMe = true; //well handle it from here
+
+				}
+			}
+		}
+		
 	}
 }
