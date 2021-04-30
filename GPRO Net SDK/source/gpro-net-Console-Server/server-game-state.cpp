@@ -126,8 +126,16 @@ void ServerGameState::handleRemoteInput()
 						teleportPlayerMsg->m_Sender = m_Peer->GetMyGUID();
 
 						hitPlayer->resetHealth(); //this is also called on clients
+						NetworkPlayerHealthUpdateMessage* healthUpdateMsg = new NetworkPlayerHealthUpdateMessage();
+						healthUpdateMsg->m_NetID = hitPlayer->m_NetID;
+						hitPlayer->m_Health -= proj->PROJECTILE_DAMAGE;
+						healthUpdateMsg->newHealth = hitPlayer->m_Health;
+						healthUpdateMsg->m_Sender = msg->m_Sender;
+
+
 
 						m_RemoteOutputEventCache.push_back(teleportPlayerMsg);
+						m_RemoteOutputEventCache.push_back(healthUpdateMsg);
 						m_RemoteOutputEventCache.push_back(killPlayerMsg);
 					}
 					else

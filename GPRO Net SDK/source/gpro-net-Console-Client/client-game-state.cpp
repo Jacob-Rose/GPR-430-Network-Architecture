@@ -171,7 +171,6 @@ void jr::ClientGameState::handleRemoteInput()
 		else if (NetworkPlayerKilledPlayerEventMessage* msg = dynamic_cast<NetworkPlayerKilledPlayerEventMessage*>(m_RemoteInputEventCache[i]))
 		{
 			static_cast<jr::Player*>(m_EntityLayers[(int)Layers::PLAYER][msg->m_KillerID.id])->m_KillCount = msg->m_KillerNewScore;
-			static_cast<jr::Player*>(m_EntityLayers[(int)Layers::PLAYER][msg->m_DeadDudesID.id])->resetHealth();
 		}
 
 		else if (NetworkObjectAuthorityChangeMessage* msg = dynamic_cast<NetworkObjectAuthorityChangeMessage*>(m_RemoteInputEventCache[i]))
